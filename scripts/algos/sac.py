@@ -13,9 +13,9 @@ from stable_baselines3.common.utils import polyak_update
 from stable_baselines3.sac.policies import SACPolicy
 
 
-class MSAC(OffPolicyAlgorithm):
+class SAC(OffPolicyAlgorithm):
     """
-    Munchhausen Soft Actor-Critic (M-SAC)
+    Soft Actor-Critic (SAC)
     Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor,
     This implementation borrows code from original implementation (https://github.com/haarnoja/sac)
     from OpenAI Spinning Up (https://github.com/openai/spinningup), from the softlearning repo
@@ -74,7 +74,7 @@ class MSAC(OffPolicyAlgorithm):
         policy: Union[str, Type[SACPolicy]],
         env: Union[GymEnv, str],
         learning_rate: Union[float, Schedule] = 3e-4,
-        buffer_size: int = 1000000,
+        buffer_size: int = int(1e6),
         learning_starts: int = 100,
         batch_size: int = 256,
         tau: float = 0.005,
@@ -274,7 +274,7 @@ class MSAC(OffPolicyAlgorithm):
         eval_env: Optional[GymEnv] = None,
         eval_freq: int = -1,
         n_eval_episodes: int = 5,
-        tb_log_name: str = "M-SAC",
+        tb_log_name: str = "SAC",
         eval_log_path: Optional[str] = None,
         reset_num_timesteps: bool = True,
     ) -> OffPolicyAlgorithm:
