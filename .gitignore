@@ -1,6 +1,6 @@
 .vscode/
 .DS_Store
-commands.txt
+docs/commands.txt
 scripts/algos/__pycache__
 trained_agents/**
 TrainedAgents/**
