@@ -23,8 +23,10 @@ cd ~/Repositories/tum-adlr-ss21-08
 git checkout dev/marcel
 
 # create conda environment
-# conda config --append channels conda-forge
-conda env create -f ~/Repositories/tum-adlr-ss21-08/setup/requirements.yml
+# conda env create -f ~/Repositories/tum-adlr-ss21-08/setup/requirements.yml
+conda config --append channels conda-forge
+conda create -n adlr python=3.7
+conda activate adlr
 cd ~/Repositories
 git clone https://github.com/benelot/pybullet-gym.git
 cd pybullet-gym
