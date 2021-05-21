@@ -27,6 +27,7 @@ git checkout dev/marcel
 conda config --append channels conda-forge
 conda create -n adlr python=3.7
 conda activate adlr
+pip install stable-baselines3[extra]
 cd ~/Repositories
 git clone https://github.com/benelot/pybullet-gym.git
 cd pybullet-gym
