@@ -16,7 +16,7 @@ from stable_baselines3.sac.policies import SACPolicy
 
 class MSAC(SAC):
     """
-    Munchhausen Soft Actor-Critic (M-SAC)
+    Munchausen Soft Actor-Critic (M-SAC)
 
     :param policy: The policy model to use (MlpPolicy, CnnPolicy, ...)
     :param env: The environment to learn from (if registered in Gym, can be str)
@@ -61,8 +61,8 @@ class MSAC(SAC):
     :param device: Device (cpu, cuda, ...) on which the code should be run.
         Setting it to auto, the code will be run on the GPU if possible.
     :param _init_setup_model: Whether or not to build the network at the creation of the instance
-    :param munchhausen_scaling: Munchhausen log policy scaling coefficient [0, 1].
-    :param munchhausen_clipping_low: Munchhausen term clipping coefficient < 0. limits the log-policy term,
+    :param munchausen_scaling: Munchausen log policy scaling coefficient [0, 1].
+    :param munchausen_clipping_low: Munchausen term clipping coefficient < 0. limits the log-policy term,
         otherwise numerical problems may occur if the policy becomes too deterministic.
     """
 
@@ -95,8 +95,8 @@ class MSAC(SAC):
         seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
         _init_setup_model: bool = True,
-        munchhausen_scaling: float = 0.9,
-        munchhausen_clipping_low: float = -1.0,
+        munchausen_scaling: float = 0.9,
+        munchausen_clipping_low: float = -1.0,
     ):
 
         super(MSAC, self).__init__(
@@ -129,8 +129,8 @@ class MSAC(SAC):
             _init_setup_model,
         )
 
-        self.munchhausen_scaling = munchhausen_scaling
-        self.munchhausen_clipping_low = munchhausen_clipping_low
+        self.munchausen_scaling = munchausen_scaling
+        self.munchausen_clipping_low = munchausen_clipping_low
 
     def train(self, gradient_steps: int, batch_size: int = 64) -> None:
         # Update optimizers learning rate
@@ -190,10 +190,10 @@ class MSAC(SAC):
                 # ----- M-SAC -----
                 # ...
                 # TODO: verify formulas
-                next_munchhausen_values = ent_coef * log_prob.reshape(-1, 1)
-                next_munchhausen_values = self.munchhausen_scaling * th.clamp(next_munchhausen_values, self.munchhausen_clipping_low, 0)
-                # td error + Munchhausen term + entropy term
-                target_q_values = replay_data.rewards + next_munchhausen_values \
+                next_munchausen_values = ent_coef * log_prob.reshape(-1, 1)
+                next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values, self.munchausen_clipping_low, 0)
+                # td error + Munchausen term + entropy term
+                target_q_values = replay_data.rewards + next_munchausen_values \
                                   + (1 - replay_data.dones) * self.gamma * next_q_values
 
             # Get current Q-values estimates for each critic network
@@ -228,9 +228,9 @@ class MSAC(SAC):
 
         self._n_updates += gradient_steps
 
-        # log the proportion that Munchhausen has in the target q value
+        # log the proportion that Munchausen has in the target q value
         # TODO: implement for GPU usage
-        logger.record("train/munchhausen_fraction", np.average((next_munchhausen_values / target_q_values)))
+        logger.record("train/munchausen_fraction", np.average((next_munchausen_values / target_q_values)))
         logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
         logger.record("train/ent_coef", np.mean(ent_coefs))
         logger.record("train/actor_loss", np.mean(actor_losses))
