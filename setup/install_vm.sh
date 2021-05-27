@@ -18,20 +18,24 @@ source ~/.bashrc
 # git repo
 mkdir ~/Repositories
 cd ~/Repositories
-git clone git@github.com:Finn-Sueberkrueb/tum-adlr-ss21-08.git
+git clone --branch dev/marcel --recursive git@github.com:Finn-Sueberkrueb/tum-adlr-ss21-08.git 
 cd ~/Repositories/tum-adlr-ss21-08
-git checkout dev/marcel
 
 # create conda environment
 # conda env create -f ~/Repositories/tum-adlr-ss21-08/setup/requirements.yml
 conda config --append channels conda-forge
 conda create -n adlr python=3.7
 conda activate adlr
-pip install stable-baselines3[extra]
-cd ~/Repositories
-git clone https://github.com/benelot/pybullet-gym.git
-cd pybullet-gym
-pip install -e .
+# pip install stable-baselines3[extra]
+conda install seaborn
+pip install pyyaml
+pip install sb3-contrib
+pip install optuna
+cd ~/Repositories && git clone https://github.com/openai/gym.git
+cd gym && pip install -e .
+cd ~/Repositories && git clone https://github.com/benelot/pybullet-gym.git
+cd pybullet-gym && pip install -e .
+cd ~/Repositories/tum-adlr-ss21-08/stable-baselines3 && pip install -e .
 
 # install cuda
 # sudo apt install linux-headers-$(uname -r)
