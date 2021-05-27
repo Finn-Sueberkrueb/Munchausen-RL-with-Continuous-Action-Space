@@ -6,11 +6,13 @@ import torch as th
 from torch.nn import functional as F
 
 from stable_baselines3.common import logger
+from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3.common.noise import ActionNoise
 from stable_baselines3 import SAC
 from stable_baselines3.common.type_aliases import GymEnv, MaybeCallback, Schedule
 from stable_baselines3.common.utils import polyak_update
 from stable_baselines3.sac.policies import SACPolicy
+
 
 class MSAC(SAC):
     """
@@ -33,6 +35,9 @@ class MSAC(SAC):
         during the rollout.
     :param action_noise: the action noise type (None by default), this can help
         for hard exploration problem. Cf common.noise for the different action noise type.
+    :param replay_buffer_class: Replay buffer class to use (for instance ``HerReplayBuffer``).
+        If ``None``, it will be automatically selected.
+    :param replay_buffer_kwargs: Keyword arguments to pass to the replay buffer on creation.
     :param optimize_memory_usage: Enable a memory efficient variant of the replay buffer
         at a cost of more complexity.
         See https://github.com/DLR-RM/stable-baselines3/issues/37#issuecomment-637501195
@@ -66,7 +71,7 @@ class MSAC(SAC):
         policy: Union[str, Type[SACPolicy]],
         env: Union[GymEnv, str],
         learning_rate: Union[float, Schedule] = 3e-4,
-        buffer_size: int = int(1e6),
+        buffer_size: int = 1000000,  # 1e6
         learning_starts: int = 100,
         batch_size: int = 256,
         tau: float = 0.005,
@@ -74,6 +79,8 @@ class MSAC(SAC):
         train_freq: Union[int, Tuple[int, str]] = 1,
         gradient_steps: int = 1,
         action_noise: Optional[ActionNoise] = None,
+        replay_buffer_class: Optional[ReplayBuffer] = None,
+        replay_buffer_kwargs: Optional[Dict[str, Any]] = None,
         optimize_memory_usage: bool = False,
         ent_coef: Union[str, float] = "auto",
         target_update_interval: int = 1,
@@ -104,6 +111,8 @@ class MSAC(SAC):
             train_freq,
             gradient_steps,
             action_noise,
+            replay_buffer_class,
+            replay_buffer_kwargs,
             optimize_memory_usage,
             ent_coef,
             target_update_interval,
@@ -182,9 +191,9 @@ class MSAC(SAC):
                 # ...
                 # TODO: verify formulas
                 next_munchhausen_values = ent_coef * log_prob.reshape(-1, 1)
-                next_munchhausen_values = th.clamp(next_munchhausen_values, self.munchhausen_clipping_low, 0)
+                next_munchhausen_values = self.munchhausen_scaling * th.clamp(next_munchhausen_values, self.munchhausen_clipping_low, 0)
                 # td error + Munchhausen term + entropy term
-                target_q_values = replay_data.rewards + self.munchhausen_scaling * next_munchhausen_values \
+                target_q_values = replay_data.rewards + next_munchhausen_values \
                                   + (1 - replay_data.dones) * self.gamma * next_q_values
 
             # Get current Q-values estimates for each critic network
@@ -221,7 +230,7 @@ class MSAC(SAC):
 
         # log the proportion that Munchhausen has in the target q value
         # TODO: implement for GPU usage
-        # logger.record("train/Munchausen_fraction", np.average((next_munchhausen_values/target_q_values).cpu()))
+        logger.record("train/munchhausen_fraction", np.average((next_munchhausen_values / target_q_values)))
         logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
         logger.record("train/ent_coef", np.mean(ent_coefs))
         logger.record("train/actor_loss", np.mean(actor_losses))
