@@ -1,6 +1,6 @@
 # run on VM
 # chmod +x install_vm.sh
-# ./install_vm.sh
+# source install_vm.sh
 
 # preparation
 sudo apt update && sudo apt upgrade
@@ -28,14 +28,15 @@ conda create -n adlr python=3.7
 conda activate adlr
 # pip install stable-baselines3[extra]
 conda install seaborn
+conda install tensorboard
 pip install pyyaml
-pip install sb3-contrib
 pip install optuna
 cd ~/Repositories && git clone https://github.com/openai/gym.git
 cd gym && pip install -e .
 cd ~/Repositories && git clone https://github.com/benelot/pybullet-gym.git
 cd pybullet-gym && pip install -e .
 cd ~/Repositories/tum-adlr-ss21-08/stable-baselines3 && pip install -e .
+pip install sb3-contrib
 
 # install cuda
 # sudo apt install linux-headers-$(uname -r)
