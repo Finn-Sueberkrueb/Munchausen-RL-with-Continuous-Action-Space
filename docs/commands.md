@@ -32,4 +32,4 @@ Copy file from computer to VM\
 `gcloud compute scp --project "tum-adlr-ss21-08" ~/Repositories/tum-adlr-ss21-08/setup/install_vm.sh instance-c2:~`
 
 Copy folder from VM to computer\
-`gcloud compute scp --recurse instance-c2:~/Repositories/tum-adlr-ss21-08/rl-baselines3-zoo/logs/sac ~/Repositories/tum-adlr-ss21-08/docs/results`
+`gcloud compute scp --recurse instance-c2:~/Repositories/tum-adlr-ss21-08/rl-baselines3-zoo/logs/\{sac,msac,tensorboard\} ~/Repositories/tum-adlr-ss21-08/docs/results`
