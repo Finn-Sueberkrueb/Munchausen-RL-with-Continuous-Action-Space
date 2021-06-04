@@ -5,15 +5,15 @@ Package list for creating same environment elsewhere\
 
 ### git
 
-Commit on computer
-`cd ~/Repositories/tum-adlr-ss21-08/rl-baselines3-zoo`
-`git <add, commit, push>`
-`cd ..`
+Commit on computer\
+`cd ~/Repositories/tum-adlr-ss21-08/rl-baselines3-zoo`\
+`git <add, commit, push>`\
+`cd ..`\
 `git <add, commit, push>`
 
-Update VM repos
-`cd ~/Repositories/tum-adlr-ss21-08`
-`git pull`
+Update VM repos\
+`cd ~/Repositories/tum-adlr-ss21-08`\
+`git pull`\
 `git submodule update --recursive`
 
 ### Start important scripts
@@ -29,7 +29,9 @@ Visualize trained agent\
 Plot training success (y-axis) w.r.t. timesteps (x-axis) with a moving window of 500 episodes\
 `python scripts/plot_train.py --algo sac msac --env HopperBulletEnv-v0 --y-axis reward --x-axis steps --exp-folder ~/Repositories/tum-adlr-ss21-08/docs/results/ --episode-window 500`
 
+`python -m utils.record_video --algo sac --env AntBulletEnv-v0 -n 1000 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --output-folder ~/Repositories/tum-adlr-ss21-08/docs/images/videos --exp-id 1`
 
+`python -m utils.record_training --algo sac --env AntBulletEnv-v0 -n 1000 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --output-folder ~/Repositories/tum-adlr-ss21-08/docs/images/videos --seed 1 --exp-id 1 --gif`
 ### Visualize while training
 
 Start tensorboard on VM\
