@@ -258,6 +258,18 @@ class SAC(OffPolicyAlgorithm):
                 polyak_update(self.critic.parameters(), self.critic_target.parameters(), self.tau)
 
         self._n_updates += gradient_steps
+        # log the proportion that Munchausen has in the target q value
+        entropy_scalamean = (th.mean(-ent_coef * next_log_prob.reshape(-1, 1)).data.numpy())
+        logger.record("munchausen/entropy_scalamean", np.average(entropy_scalamean))
+        entropy_mean = (th.mean(-next_log_prob.reshape(-1, 1)).data.numpy())
+        logger.record("munchausen/entropy_mean", np.average(entropy_mean))
+        #logger.record("munchausen/munchausen_clipping_low", self.munchausen_clipping_low)
+        #logger.record("munchausen/munchausen_clipping_high", self.munchausen_clipping_high)
+        #logger.record("munchausen/munchausen_scaling", self.munchausen_scaling)
+        #logger.record("munchausen/next_munchausen_values", np.average(next_munchausen_values))
+        #logger.record("munchausen/munchausen_fraction", np.average((abs(next_munchausen_values) / target_q_values)))
+        logger.record("munchausen/log_policy", log_prob.reshape(-1, 1))
+        logger.record("munchausen/next_q_values", np.average(next_q_values))
 
         logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
         logger.record("train/ent_coef", np.mean(ent_coefs))

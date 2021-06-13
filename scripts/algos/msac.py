@@ -97,6 +97,7 @@ class MSAC(SAC):
         _init_setup_model: bool = True,
         munchausen_scaling: float = 0.9,
         munchausen_clipping_low: float = -1.0,
+        munchausen_clipping_high: float = 0.0, # TODO: How to choose the clipping values
     ):
 
         super(MSAC, self).__init__(
@@ -229,6 +230,12 @@ class MSAC(SAC):
         self._n_updates += gradient_steps
 
         # log the proportion that Munchausen has in the target q value
+        entropy_scalamean = (th.mean(-ent_coef * next_log_prob.reshape(-1, 1)).data.numpy())
+        logger.record("munchausen/entropy_scalamean", np.average(entropy_scalamean))
+        entropy_mean = (th.mean(-next_log_prob.reshape(-1, 1)).data.numpy())
+        logger.record("munchausen/entropy_mean", np.average(entropy_mean))
+        logger.record("munchausen/munchausen_clipping_low", self.munchausen_clipping_low)
+        logger.record("munchausen/munchausen_clipping_high", self.munchausen_clipping_high)
         logger.record("munchausen/munchausen_scaling", self.munchausen_scaling)
         logger.record("munchausen/munchausen_term", np.average(next_munchausen_values))
         logger.record("munchausen/munchausen_fraction", np.average((abs(next_munchausen_values) / target_q_values)))
@@ -236,8 +243,6 @@ class MSAC(SAC):
         logger.record("munchausen/next_log_policy", th.mean(next_log_prob.reshape(-1, 1)).data)
         logger.record("munchausen/reward", np.average(replay_data.rewards))
         logger.record("munchausen/next_q_values", np.average(next_q_values))
-        logger.record("munchausen/target_q_values", np.average(target_q_values))
-        logger.record("munchausen/replay_data_dones", np.average(replay_data.dones))
 
         logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
         logger.record("train/ent_coef", np.mean(ent_coefs))
