@@ -21,10 +21,13 @@ Update VM repos\
 `cd rl-baselines3-zoo`
 
 Train in background process and redirect output to file\
-`nohup python train.py --algo msac --env AntBulletEnv-v0 --tensorboard-log logs/tensorboard --n-timesteps 1000000 --seed 1 > msac.out &`
+`nohup python train.py --algo msac --env HalfCheetahBulletEnv-v0 --tensorboard-log logs/tensorboard --n-timesteps 1000000 --seed 1 > msac_shift-04.out &`
 
 Visualize trained agent\
 `python enjoy.py --algo sac --env HopperBulletEnv-v0 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --n-timesteps 1000`
+
+with changed enjoy.py file to select the file directly
+`python rl-baselines3-zoo/enjoy.py --algo msac --env HalfCheetahBulletEnv-v0 --folder docs/results/msac/HalfCheetahBulletEnv-v0_1_shift_30 `
 
 Plot training success (y-axis) w.r.t. timesteps (x-axis) with a moving window of 500 episodes\
 `python scripts/plot_train.py --algo sac msac --env HopperBulletEnv-v0 --y-axis reward --x-axis steps --exp-folder ~/Repositories/tum-adlr-ss21-08/docs/results/ --episode-window 500`

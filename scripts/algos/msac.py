@@ -191,8 +191,15 @@ class MSAC(SAC):
                 # ----- M-SAC -----
                 # ...
                 # TODO: verify formulas
-                next_munchausen_values = ent_coef * log_prob.reshape(-1, 1)
-                next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values, self.munchausen_clipping_low, 0)
+                #next_munchausen_values = ent_coef * log_prob.reshape(-1, 1)
+                #next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values, self.munchausen_clipping_low, self.munchausen_clipping_high)
+
+                # Test implementation shift in range [-1,0]
+                next_munchausen_values = ent_coef * (log_prob.reshape(-1, 1)-30.0)
+                next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
+                                                                            self.munchausen_clipping_low,
+                                                                            self.munchausen_clipping_high)
+
                 # td error + Munchausen term + entropy term
                 target_q_values = replay_data.rewards + next_munchausen_values \
                                   + (1 - replay_data.dones) * self.gamma * next_q_values
@@ -230,6 +237,8 @@ class MSAC(SAC):
         self._n_updates += gradient_steps
 
         # log the proportion that Munchausen has in the target q value
+        shifted_entropy_scale_mean = (th.mean(ent_coef * (log_prob.reshape(-1, 1)-30.0)).data.numpy())
+        logger.record("munchausen/shifted_entropy_scale_mean", np.average(shifted_entropy_scale_mean))
         entropy_scalamean = (th.mean(-ent_coef * next_log_prob.reshape(-1, 1)).data.numpy())
         logger.record("munchausen/entropy_scalamean", np.average(entropy_scalamean))
         entropy_mean = (th.mean(-next_log_prob.reshape(-1, 1)).data.numpy())
