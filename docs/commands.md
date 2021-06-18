@@ -21,7 +21,7 @@ Update VM repos\
 `cd rl-baselines3-zoo`
 
 Train in background process and redirect output to file\
-`nohup python train.py --algo msac --env Walker2DBulletEnv-v0 --tensorboard-log logs/tensorboard --n-timesteps 1000000 --seed 3 > msac.out &`
+`nohup python train.py --algo msac --env HalfCheetahBulletEnv-v0 --tensorboard-log logs/tensorboard --n-timesteps 1000000 --seed 1 > msac_scale_100.out &`
 
 Visualize trained agent\
 `python enjoy.py --algo sac --env HopperBulletEnv-v0 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --n-timesteps 1000`
@@ -29,9 +29,12 @@ Visualize trained agent\
 Plot training success (y-axis) w.r.t. timesteps (x-axis) with a moving window of 500 episodes\
 `python scripts/plot_train.py --algo sac msac --env HopperBulletEnv-v0 --y-axis reward --x-axis steps --exp-folder ~/Repositories/tum-adlr-ss21-08/docs/results/ --episode-window 500`
 
+`python scripts/all_plots.py -a msac --env HalfCheetah --print-n-trials -max 1000000 -s 4 -f docs/results`
+
+
 `python -m utils.record_video --algo sac --env AntBulletEnv-v0 -n 1000 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --output-folder ~/Repositories/tum-adlr-ss21-08/docs/images/videos --exp-id 1`
 
-`python -m utils.record_training --algo sac --env AntBulletEnv-v0 -n 1000 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --output-folder ~/Repositories/tum-adlr-ss21-08/docs/images/videos --seed 1 --exp-id 1 --gif`
+`python -m utils.record_training --algo msac --env Walker2DBulletEnv-v0 -n 1000 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --output-folder ~/Repositories/tum-adlr-ss21-08/docs/images/videos --seed 1 --exp-id 1 --gif`
 ### Visualize while training
 
 Start tensorboard on VM\
@@ -46,6 +49,7 @@ Use [setup/preinstall_vm.sh](./setup/preinstall_vm.sh) and [setup/install_vm.sh]
 
 Was required once on computer after adding forked submodule\
 `git submodule set-url rl-baselines3-zoo https://github.com/marcelbrucker/rl-baselines3-zoo.git`
+`git remote add upstream https://github.com/DLR-RM/rl-baselines3-zoo.git`
 
 Copy file from computer to VM\
 `gcloud compute scp --project "tum-adlr-ss21-08" ~/Repositories/tum-adlr-ss21-08/setup/install_vm.sh instance-c2:~`
