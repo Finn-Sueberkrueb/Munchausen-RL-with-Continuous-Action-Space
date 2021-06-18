@@ -5,7 +5,6 @@ import numpy as np
 import torch as th
 from torch.nn import functional as F
 
-from stable_baselines3.common import logger
 from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3.common.noise import ActionNoise
 from stable_baselines3 import SAC
@@ -62,8 +61,11 @@ class MSAC(SAC):
         Setting it to auto, the code will be run on the GPU if possible.
     :param _init_setup_model: Whether or not to build the network at the creation of the instance
     :param munchausen_scaling: Munchausen log policy scaling coefficient [0, 1].
-    :param munchausen_clipping_low: Munchausen term clipping coefficient < 0. limits the log-policy term,
+    :param munchausen_clipping_low: Munchausen term clipping coefficient low. limits the log-policy term,
         otherwise numerical problems may occur if the policy becomes too deterministic.
+    :param munchausen_clipping_high: Munchausen term clipping coefficient high. limits the log-policy term,
+        otherwise numerical problems may occur if the policy becomes too deterministic.
+    :param munchausen_mode: To test different approaches
     """
 
     def __init__(
@@ -98,6 +100,7 @@ class MSAC(SAC):
         munchausen_scaling: float = 0.9,
         munchausen_clipping_low: float = -1.0,
         munchausen_clipping_high: float = 0.0, # TODO: How to choose the clipping values
+        munchausen_mode: str = "default"
     ):
 
         super(MSAC, self).__init__(
@@ -132,6 +135,8 @@ class MSAC(SAC):
 
         self.munchausen_scaling = munchausen_scaling
         self.munchausen_clipping_low = munchausen_clipping_low
+        self.munchausen_clipping_high = munchausen_clipping_high
+        self.munchausen_mode = munchausen_mode
 
     def train(self, gradient_steps: int, batch_size: int = 64) -> None:
         # Update optimizers learning rate
@@ -190,15 +195,26 @@ class MSAC(SAC):
                 # target_q_values = replay_data.rewards + (1 - replay_data.dones) * self.gamma * next_q_values
                 # ----- M-SAC -----
                 # ...
-                # TODO: verify formulas
-                #next_munchausen_values = ent_coef * log_prob.reshape(-1, 1)
-                #next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values, self.munchausen_clipping_low, self.munchausen_clipping_high)
-
-                # Test implementation shift in range [-1,0]
-                next_munchausen_values = ent_coef * (log_prob.reshape(-1, 1)-30.0)
-                next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
-                                                                            self.munchausen_clipping_low,
-                                                                            self.munchausen_clipping_high)
+                if (self.munchausen_mode == "no_clipping"):
+                    next_munchausen_values = ent_coef * log_prob.reshape(-1, 1)
+                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+                elif (self.munchausen_mode == "fix_scale"):
+                    next_munchausen_values = log_prob.reshape(-1, 1)
+                    next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
+                                                                                self.munchausen_clipping_low,
+                                                                                self.munchausen_clipping_high)
+                elif (self.munchausen_mode == "shift"):
+                    # Test implementation shift in range [-1,0]
+                    next_munchausen_values = ent_coef * (log_prob.reshape(-1, 1) - 30.0)
+                    next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
+                                                                                self.munchausen_clipping_low,
+                                                                                self.munchausen_clipping_high)
+                else :
+                    # Default M-SAC
+                    next_munchausen_values = ent_coef * log_prob.reshape(-1, 1)
+                    next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
+                                                                                self.munchausen_clipping_low,
+                                                                                self.munchausen_clipping_high)
 
                 # td error + Munchausen term + entropy term
                 target_q_values = replay_data.rewards + next_munchausen_values \
@@ -237,28 +253,24 @@ class MSAC(SAC):
         self._n_updates += gradient_steps
 
         # log the proportion that Munchausen has in the target q value
-        shifted_entropy_scale_mean = (th.mean(ent_coef * (log_prob.reshape(-1, 1)-30.0)).data.numpy())
-        logger.record("munchausen/shifted_entropy_scale_mean", np.average(shifted_entropy_scale_mean))
         entropy_scalamean = (th.mean(-ent_coef * next_log_prob.reshape(-1, 1)).data.numpy())
-        logger.record("munchausen/entropy_scalamean", np.average(entropy_scalamean))
+        self.logger.record("munchausen/entropy_scalamean", np.average(entropy_scalamean))
         entropy_mean = (th.mean(-next_log_prob.reshape(-1, 1)).data.numpy())
-        logger.record("munchausen/entropy_mean", np.average(entropy_mean))
-        logger.record("munchausen/munchausen_clipping_low", self.munchausen_clipping_low)
-        logger.record("munchausen/munchausen_clipping_high", self.munchausen_clipping_high)
-        logger.record("munchausen/munchausen_scaling", self.munchausen_scaling)
-        logger.record("munchausen/munchausen_term", np.average(next_munchausen_values))
-        logger.record("munchausen/munchausen_fraction", np.average((abs(next_munchausen_values) / target_q_values)))
-        logger.record("munchausen/log_policy", th.mean(log_prob.reshape(-1, 1)).data)
-        logger.record("munchausen/next_log_policy", th.mean(next_log_prob.reshape(-1, 1)).data)
-        logger.record("munchausen/reward", np.average(replay_data.rewards))
-        logger.record("munchausen/next_q_values", np.average(next_q_values))
+        self.logger.record("munchausen/entropy_mean", np.average(entropy_mean))
+        self.logger.record("munchausen/munchausen_clipping_low", self.munchausen_clipping_low)
+        self.logger.record("munchausen/munchausen_clipping_high", self.munchausen_clipping_high)
+        self.logger.record("munchausen/munchausen_scaling", self.munchausen_scaling)
+        self.logger.record("munchausen/next_munchausen_values", np.average(next_munchausen_values))
+        self.logger.record("munchausen/munchausen_fraction", np.average((abs(next_munchausen_values) / target_q_values)))
+        self.logger.record("munchausen/log_policy", log_prob.reshape(-1, 1))
+        self.logger.record("munchausen/next_q_values", np.average(next_q_values))
 
-        logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
-        logger.record("train/ent_coef", np.mean(ent_coefs))
-        logger.record("train/actor_loss", np.mean(actor_losses))
-        logger.record("train/critic_loss", np.mean(critic_losses))
+        self.logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
+        self.logger.record("train/ent_coef", np.mean(ent_coefs))
+        self.logger.record("train/actor_loss", np.mean(actor_losses))
+        self.logger.record("train/critic_loss", np.mean(critic_losses))
         if len(ent_coef_losses) > 0:
-            logger.record("train/ent_coef_loss", np.mean(ent_coef_losses))
+            self.logger.record("train/ent_coef_loss", np.mean(ent_coef_losses))
 
     def learn(
         self,
