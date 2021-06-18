@@ -43,6 +43,8 @@ Start tensorboard on VM\
 Then reroute socket on computer to open tensorboard webpage\
 `gcloud compute ssh "instance-c2" -- -NfL 6006:localhost:6006`
 
+Start TensorBoard on server to access over web
+`nohup tensorboard --bind_all --port 8080 --logdir logs/tensorboard &`
 ## Setup
 
 Use [setup/preinstall_vm.sh](./setup/preinstall_vm.sh) and [setup/install_vm.sh](./setup/install_vm.sh) on fresh VM
