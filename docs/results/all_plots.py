@@ -151,62 +151,70 @@ for env in args.env:  # noqa: C901
             merged_results = merged_results_tmp
             last_eval = last_eval_tmp
 
-            # Post-process
-            if len(merged_results) > 0:
-                # shape: (n_trials, n_eval * n_eval_episodes)
-                merged_results = np.array(merged_results)
-                n_trials = len(merged_results)
-                n_eval = len(timesteps)
+            ############# Adaption #############
+            merged_results_all = merged_results
+            tmp = []
+            for arr in merged_results_all:
+                tmp.append(arr)
+                merged_results = tmp
+            ############# Adaption #############
 
-                if args.print_n_trials:
-                    print(f"{env}-{algo}-{args.labels[folder_idx]}: {n_trials}")
+                # Post-process
+                if len(merged_results) > 0:
+                    # shape: (n_trials, n_eval * n_eval_episodes)
+                    merged_results = np.array(merged_results)
+                    n_trials = len(merged_results)
+                    n_eval = len(timesteps)
 
-                # reshape to (n_trials, n_eval, n_eval_episodes)
-                evaluations = merged_results.reshape((n_trials, n_eval, -1))
-                # re-arrange to (n_eval, n_trials, n_eval_episodes)
-                evaluations = np.swapaxes(evaluations, 0, 1)
-                # (n_eval,)
-                mean_ = np.mean(evaluations, axis=(1, 2))
-                kernel_size = args.smooth
-                mean_ = np.append(mean_, np.ones(kernel_size-1).T*mean_[-1], axis=0)
-                kernel = np.ones(kernel_size) / kernel_size
-                mean_ = np.convolve(mean_, kernel, mode='valid')
-                # (n_eval, n_trials)
-                mean_per_eval = np.mean(evaluations, axis=-1)
-                # (n_eval,)
-                std_ = np.std(mean_per_eval, axis=-1)
-                # std: error:
-                std_error = std_ / np.sqrt(n_trials)
-                # Take last evaluation
-                # shape: (n_trials, n_eval_episodes) to (n_trials,)
-                last_evals = np.array(last_eval).squeeze().mean(axis=-1)
-                # Standard deviation of the mean performance for the last eval
-                std_last_eval = np.std(last_evals)
-                # Compute standard error
-                std_error_last_eval = std_last_eval / np.sqrt(n_trials)
+                    if args.print_n_trials:
+                        print(f"{env}-{algo}-{args.labels[folder_idx]}: {n_trials}")
 
-                if args.median:
-                    results[env][f"{algo}-{args.labels[folder_idx]}"] = f"{np.median(last_evals):.0f}"
-                else:
-                    results[env][
-                        f"{algo}-{args.labels[folder_idx]}"
-                    ] = f"{np.mean(last_evals):.0f} +/- {std_error_last_eval:.0f}"
+                    # reshape to (n_trials, n_eval, n_eval_episodes)
+                    evaluations = merged_results.reshape((n_trials, n_eval, -1))
+                    # re-arrange to (n_eval, n_trials, n_eval_episodes)
+                    evaluations = np.swapaxes(evaluations, 0, 1)
+                    # (n_eval,)
+                    mean_ = np.mean(evaluations, axis=(1, 2))
+                    kernel_size = args.smooth
+                    mean_ = np.append(np.ones(kernel_size - 1).T * mean_[0], mean_, axis=0)
+                    kernel = np.ones(kernel_size) / kernel_size
+                    mean_ = np.convolve(mean_, kernel, mode='valid')
+                    # (n_eval, n_trials)
+                    mean_per_eval = np.mean(evaluations, axis=-1)
+                    # (n_eval,)
+                    std_ = np.std(mean_per_eval, axis=-1)
+                    # std: error:
+                    std_error = std_ / np.sqrt(n_trials)
+                    # Take last evaluation
+                    # shape: (n_trials, n_eval_episodes) to (n_trials,)
+                    last_evals = np.array(last_eval).squeeze().mean(axis=-1)
+                    # Standard deviation of the mean performance for the last eval
+                    std_last_eval = np.std(last_evals)
+                    # Compute standard error
+                    std_error_last_eval = std_last_eval / np.sqrt(n_trials)
 
-                # x axis in Millions of timesteps
-                divider = 1e6
-                if args.no_million:
-                    divider = 1.0
+                    if args.median:
+                        results[env][f"{algo}-{args.labels[folder_idx]}"] = f"{np.median(last_evals):.0f}"
+                    else:
+                        results[env][
+                            f"{algo}-{args.labels[folder_idx]}"
+                        ] = f"{np.mean(last_evals):.0f} +/- {std_error_last_eval:.0f}"
 
-                post_processed_results[env][f"{algo}-{args.labels[folder_idx]}"] = {
-                    "timesteps": timesteps,
-                    "mean": mean_,
-                    "std_error": std_error,
-                    "last_evals": last_evals,
-                    "std_error_last_eval": std_error_last_eval,
-                }
+                    # x axis in Millions of timesteps
+                    divider = 1e6
+                    if args.no_million:
+                        divider = 1.0
 
-                plt.plot(timesteps / divider, mean_, label=f"{algo}", linewidth=3)
-                plt.fill_between(timesteps / divider, mean_ + std_error, mean_ - std_error, alpha=0.5)
+                    post_processed_results[env][f"{algo}-{args.labels[folder_idx]}"] = {
+                        "timesteps": timesteps,
+                        "mean": mean_,
+                        "std_error": std_error,
+                        "last_evals": last_evals,
+                        "std_error_last_eval": std_error_last_eval,
+                    }
+
+                    plt.plot(timesteps / divider, mean_, label=f"{algo}", linewidth=3)
+                    plt.fill_between(timesteps / divider, mean_ + std_error, mean_ - std_error, alpha=0.5)
 
     plt.legend()
 
