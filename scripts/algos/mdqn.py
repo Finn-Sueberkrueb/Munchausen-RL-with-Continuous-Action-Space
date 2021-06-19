@@ -201,11 +201,30 @@ class MDQN(OffPolicyAlgorithm):
                 # Avoid potential broadcast issue
                 next_q_values = next_q_values.reshape(-1, 1)
 
+                munchausen_clipping_low = -1.0
+                munchausen_clipping_high = 0.0
+                munchausen_scaling = 0.9
+                tempreture_param = 0.03
+
+                munchausen_values = munchausen_scaling * th.clamp(tempreture_param * current_action_log_prob, munchausen_clipping_low,
+                                              munchausen_clipping_high)
 
                 # 1-step TD target
-                target_q_values = replay_data.rewards + 0.9 * th.clamp( 0.03 * current_action_log_prob, -1.0, 0.0) \
-                                  + (1 - replay_data.dones) * self.gamma * (next_q_values - 0.03*next_log_prob)
+                target_q_values = replay_data.rewards + munchausen_values \
+                                  + (1 - replay_data.dones) * self.gamma * (next_q_values - tempreture_param*next_log_prob)
 
+
+                self.logger.record("munchausen/target_q_values_mean", np.average(th.mean(target_q_values).data.numpy()))
+                self.logger.record("munchausen/next_q_values_mean", np.average(th.mean(next_q_values).data.numpy()))
+                self.logger.record("munchausen/rewards_mean", np.average(th.mean(replay_data.rewards).data.numpy()))
+                self.logger.record("munchausen/entropy_mean", np.average(th.mean(-next_log_prob).data.numpy()))
+                self.logger.record("munchausen/munchausen_values_mean", np.average(th.mean(munchausen_values).data.numpy()))
+
+                self.logger.record("munchausen/munchausen_clipping_low", munchausen_clipping_low)
+                self.logger.record("munchausen/munchausen_clipping_high", munchausen_clipping_high)
+                self.logger.record("munchausen/munchausen_scaling", munchausen_scaling)
+                self.logger.record("munchausen/tempreture_param", tempreture_param)
+                self.logger.record("munchausen/gamma", self.gamma)
 
 
             # Compute Huber loss (less sensitive to outliers)
