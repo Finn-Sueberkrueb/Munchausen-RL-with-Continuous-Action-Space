@@ -13,7 +13,7 @@ from stable_baselines3.common.utils import get_linear_fn, is_vectorized_observat
 from stable_baselines3.dqn.policies import DQNPolicy
 
 
-class MDQN(OffPolicyAlgorithm):
+class DQN(OffPolicyAlgorithm):
     """
     Deep Q-Network (DQN)
 
@@ -87,7 +87,7 @@ class MDQN(OffPolicyAlgorithm):
         _init_setup_model: bool = True,
     ):
 
-        super(MDQN, self).__init__(
+        super(DQN, self).__init__(
             policy,
             env,
             DQNPolicy,
@@ -128,7 +128,7 @@ class MDQN(OffPolicyAlgorithm):
             self._setup_model()
 
     def _setup_model(self) -> None:
-        super(MDQN, self)._setup_model()
+        super(DQN, self)._setup_model()
         self._create_aliases()
         self.exploration_schedule = get_linear_fn(
             self.exploration_initial_eps,
@@ -192,23 +192,17 @@ class MDQN(OffPolicyAlgorithm):
                 next_action_log_prob = next_action_log_prob.reshape(-1, 1)
 
 
+
                 # Follow greedy policy: use the one with the highest value
                 next_q_values, _ = next_q_values.max(dim=1)
                 #print(next_q_values.shape)
                 # Avoid potential broadcast issue
                 next_q_values = next_q_values.reshape(-1, 1)
 
-                munchausen_clipping_low = -1.0
-                munchausen_clipping_high = 0.0
-                munchausen_scaling = 0.9
-                tempreture_param = 0.03
-
-                munchausen_values = munchausen_scaling * th.clamp(tempreture_param * current_action_log_prob, munchausen_clipping_low,
-                                              munchausen_clipping_high)
 
                 # 1-step TD target
-                target_q_values = replay_data.rewards + munchausen_values \
-                                  + (1 - replay_data.dones) * self.gamma * (next_q_values - tempreture_param * next_action_log_prob)
+                target_q_values = replay_data.rewards \
+                                  + (1 - replay_data.dones) * self.gamma * (next_q_values)
 
 
                 self.logger.record("munchausen/target_q_values_mean", np.average(th.mean(target_q_values).data.numpy()))
@@ -216,12 +210,7 @@ class MDQN(OffPolicyAlgorithm):
                 self.logger.record("munchausen/rewards_mean", np.average(th.mean(replay_data.rewards).data.numpy()))
                 self.logger.record("munchausen/curr_entropy_mean", np.average(th.mean(-current_action_log_prob).data.numpy()))
                 self.logger.record("munchausen/next_entropy_mean", np.average(th.mean(-next_action_log_prob   ).data.numpy()))
-                self.logger.record("munchausen/munchausen_values_mean", np.average(th.mean(munchausen_values).data.numpy()))
 
-                self.logger.record("munchausen/munchausen_clipping_low", munchausen_clipping_low)
-                self.logger.record("munchausen/munchausen_clipping_high", munchausen_clipping_high)
-                self.logger.record("munchausen/munchausen_scaling", munchausen_scaling)
-                self.logger.record("munchausen/tempreture_param", tempreture_param)
                 self.logger.record("munchausen/gamma", self.gamma)
 
 
@@ -292,7 +281,7 @@ class MDQN(OffPolicyAlgorithm):
         reset_num_timesteps: bool = True,
     ) -> OffPolicyAlgorithm:
 
-        return super(MDQN, self).learn(
+        return super(DQN, self).learn(
             total_timesteps=total_timesteps,
             callback=callback,
             log_interval=log_interval,
@@ -305,7 +294,7 @@ class MDQN(OffPolicyAlgorithm):
         )
 
     def _excluded_save_params(self) -> List[str]:
-        return super(MDQN, self)._excluded_save_params() + ["q_net", "q_net_target"]
+        return super(DQN, self)._excluded_save_params() + ["q_net", "q_net_target"]
 
     def _get_torch_save_params(self) -> Tuple[List[str], List[str]]:
         state_dicts = ["policy", "policy.optimizer"]
