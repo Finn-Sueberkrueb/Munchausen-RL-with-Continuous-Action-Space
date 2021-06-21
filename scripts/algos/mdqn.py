@@ -162,60 +162,68 @@ class MDQN(OffPolicyAlgorithm):
 
 
             with th.no_grad():
+
+                ## --------------------------------- for Munchausen ---------------------------------
                 # Compute the next Q-values using the target network
-                current_q_values = self.q_net_target(replay_data.observations)
-
+                # TODO: Can we use the old actions from the reply_buffer with the current network ???
+                last_q_values = self.q_net_target(replay_data.observations)
                 # shift the q value to have only positiv values
-                current_shifted_q_values = current_q_values - current_q_values.min()
+                last_shifted_q_values = last_q_values - last_q_values.min()
                 # Normalize to get probability of action
-                current_pol_prob = th.nn.functional.normalize(current_shifted_q_values, p=1.0, dim=1, eps=1e-12, out=None)
+                last_pol_prob = th.nn.functional.normalize(last_shifted_q_values, p=1.0, dim=1, eps=1e-12, out=None)
                 # log probability of actions
-                current_log_prob = th.log(current_pol_prob)
-                # Follow greedy policy: use the one with the highest value
-                current_action_log_prob, _ = current_log_prob.max(dim=1)
+                last_log_prob = th.log(last_pol_prob)
+                # get the probability of the selected action
+                last_action_slected_log_prob = th.gather(last_log_prob, dim=1, index=replay_data.actions)
                 # Avoid potential broadcast issue
-                current_action_log_prob = current_action_log_prob.reshape(-1, 1)
+                last_action_slected_log_prob = last_action_slected_log_prob.reshape(-1, 1)
 
 
+                ## --------------------------------- for entropy ---------------------------------
                 # Compute the next Q-values using the target network
                 next_q_values = self.q_net_target(replay_data.next_observations)
-
                 # shift the q value to have only positiv values
                 next_shifted_q_values = next_q_values - next_q_values.min()
                 # Normalize to get probability of action
                 next_pol_prob = th.nn.functional.normalize(next_shifted_q_values, p=1.0, dim=1, eps=1e-12, out=None)
                 # log probability of actions
                 next_log_prob = th.log(next_pol_prob)
-                # Follow greedy policy: use the one with the highest value
-                next_action_log_prob, _ = next_log_prob.max(dim=1)
+                # Entropy: SUM p(a)*log(p(a))
+                next_action_entropy_single_values = next_pol_prob * next_log_prob
+                next_action_entropy = next_action_entropy_single_values.sum(dim=1)
                 # Avoid potential broadcast issue
-                next_action_log_prob = next_action_log_prob.reshape(-1, 1)
+                next_action_entropy = next_action_entropy.reshape(-1, 1)
 
 
+                ## --------------------------------- for next Q-Value ---------------------------------
+                # Compute the next Q-values using the target network
+                next_q_values = self.q_net_target(replay_data.next_observations)
                 # Follow greedy policy: use the one with the highest value
                 next_q_values, _ = next_q_values.max(dim=1)
-                #print(next_q_values.shape)
                 # Avoid potential broadcast issue
                 next_q_values = next_q_values.reshape(-1, 1)
+
 
                 munchausen_clipping_low = -1.0
                 munchausen_clipping_high = 0.0
                 munchausen_scaling = 0.9
                 tempreture_param = 0.03
 
-                munchausen_values = munchausen_scaling * th.clamp(tempreture_param * current_action_log_prob, munchausen_clipping_low,
+                munchausen_values = munchausen_scaling * th.clamp(tempreture_param * last_action_slected_log_prob, munchausen_clipping_low,
                                               munchausen_clipping_high)
+
 
                 # 1-step TD target
                 target_q_values = replay_data.rewards + munchausen_values \
-                                  + (1 - replay_data.dones) * self.gamma * (next_q_values - tempreture_param * next_action_log_prob)
+                                  + (1 - replay_data.dones) * self.gamma * (next_q_values - tempreture_param * next_action_entropy)
+
 
 
                 self.logger.record("munchausen/target_q_values_mean", np.average(th.mean(target_q_values).data.numpy()))
                 self.logger.record("munchausen/next_q_values_mean", np.average(th.mean(next_q_values).data.numpy()))
                 self.logger.record("munchausen/rewards_mean", np.average(th.mean(replay_data.rewards).data.numpy()))
-                self.logger.record("munchausen/curr_entropy_mean", np.average(th.mean(-current_action_log_prob).data.numpy()))
-                self.logger.record("munchausen/next_entropy_mean", np.average(th.mean(-next_action_log_prob   ).data.numpy()))
+                self.logger.record("munchausen/last_action_slected_log_prob", np.average(th.mean(last_action_slected_log_prob).data.numpy()))
+                self.logger.record("munchausen/next_action_entropy_mean", np.average(th.mean(-next_action_entropy).data.numpy()))
                 self.logger.record("munchausen/munchausen_values_mean", np.average(th.mean(munchausen_values).data.numpy()))
 
                 self.logger.record("munchausen/munchausen_clipping_low", munchausen_clipping_low)

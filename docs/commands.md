@@ -61,3 +61,7 @@ Copy file from computer to VM\
 
 Copy folder from VM to computer\
 `gcloud compute scp --recurse instance-c2:~/Repositories/tum-adlr-ss21-08/rl-baselines3-zoo/logs/\{sac,msac,tensorboard\} ~/Repositories/tum-adlr-ss21-08/docs/results`
+
+
+## M-DQN
+`nohup python train.py --algo mdqn --env AsteroidsNoFrameskip-v4 --tensorboard-log logs/tensorboard > mdqn.out &`

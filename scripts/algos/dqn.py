@@ -162,40 +162,28 @@ class DQN(OffPolicyAlgorithm):
 
 
             with th.no_grad():
-                # Compute the next Q-values using the target network
-                current_q_values = self.q_net_target(replay_data.observations)
 
-                # shift the q value to have only positiv values
-                current_shifted_q_values = current_q_values - current_q_values.min()
-                # Normalize to get probability of action
-                current_pol_prob = th.nn.functional.normalize(current_shifted_q_values, p=1.0, dim=1, eps=1e-12, out=None)
-                # log probability of actions
-                current_log_prob = th.log(current_pol_prob)
-                # Follow greedy policy: use the one with the highest value
-                current_action_log_prob, _ = current_log_prob.max(dim=1)
-                # Avoid potential broadcast issue
-                current_action_log_prob = current_action_log_prob.reshape(-1, 1)
-
-
+                ## --------------------------------- for entropy ---------------------------------
                 # Compute the next Q-values using the target network
                 next_q_values = self.q_net_target(replay_data.next_observations)
-
                 # shift the q value to have only positiv values
                 next_shifted_q_values = next_q_values - next_q_values.min()
                 # Normalize to get probability of action
                 next_pol_prob = th.nn.functional.normalize(next_shifted_q_values, p=1.0, dim=1, eps=1e-12, out=None)
                 # log probability of actions
                 next_log_prob = th.log(next_pol_prob)
-                # Follow greedy policy: use the one with the highest value
-                next_action_log_prob, _ = next_log_prob.max(dim=1)
+                # Entropy: SUM p(a)*log(p(a))
+                next_action_entropy_single_values = next_pol_prob * next_log_prob
+                next_action_entropy = next_action_entropy_single_values.sum(dim=1)
                 # Avoid potential broadcast issue
-                next_action_log_prob = next_action_log_prob.reshape(-1, 1)
+                next_action_entropy = next_action_entropy.reshape(-1, 1)
 
 
-
+                ## --------------------------------- for next Q-Value ---------------------------------
+                # Compute the next Q-values using the target network
+                next_q_values = self.q_net_target(replay_data.next_observations)
                 # Follow greedy policy: use the one with the highest value
                 next_q_values, _ = next_q_values.max(dim=1)
-                #print(next_q_values.shape)
                 # Avoid potential broadcast issue
                 next_q_values = next_q_values.reshape(-1, 1)
 
@@ -208,8 +196,8 @@ class DQN(OffPolicyAlgorithm):
                 self.logger.record("munchausen/target_q_values_mean", np.average(th.mean(target_q_values).data.numpy()))
                 self.logger.record("munchausen/next_q_values_mean", np.average(th.mean(next_q_values).data.numpy()))
                 self.logger.record("munchausen/rewards_mean", np.average(th.mean(replay_data.rewards).data.numpy()))
-                self.logger.record("munchausen/curr_entropy_mean", np.average(th.mean(-current_action_log_prob).data.numpy()))
-                self.logger.record("munchausen/next_entropy_mean", np.average(th.mean(-next_action_log_prob   ).data.numpy()))
+                self.logger.record("munchausen/next_action_entropy_mean", np.average(th.mean(-next_action_entropy).data.numpy()))
+
 
                 self.logger.record("munchausen/gamma", self.gamma)
 
