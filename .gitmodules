@@ -3,4 +3,5 @@
 	url = git@github.com:DLR-RM/stable-baselines3.git
 [submodule "rl-baselines3-zoo"]
 	path = rl-baselines3-zoo
-	url = git@github.com:marcelbrucker/rl-baselines3-zoo.git
+	url = git@github.com:Finn-Sueberkrueb/rl-baselines3-zoo.git
+	branch = Munchausen
