@@ -1,6 +1,6 @@
 [submodule "stable-baselines3"]
 	path = stable-baselines3
-	url = https://github.com/DLR-RM/stable-baselines3.git
+	url = git@github.com:DLR-RM/stable-baselines3.git
 [submodule "rl-baselines3-zoo"]
 	path = rl-baselines3-zoo
-	url = https://github.com/marcelbrucker/rl-baselines3-zoo.git
+	url = git@github.com:marcelbrucker/rl-baselines3-zoo.git
