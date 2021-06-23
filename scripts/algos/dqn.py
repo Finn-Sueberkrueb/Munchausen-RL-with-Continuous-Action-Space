@@ -151,6 +151,18 @@ class DQN(OffPolicyAlgorithm):
         self.exploration_rate = self.exploration_schedule(self._current_progress_remaining)
         self.logger.record("rollout/exploration rate", self.exploration_rate)
 
+
+    def softmax_policy(self, obs):
+        # obtain q_values from Network
+        q_values = self.q_net_target(obs)
+        # calculate denominator of SoftMax {SUM exp(q(s,a))}
+        denominator = th.diag(1 / th.exp(q_values).sum(dim=1))
+        # use diagonal denominator matrix for elementwise multiplication with nominator
+        policy = th.matmul(denominator,th.exp(q_values))
+
+        return policy
+
+
     def train(self, gradient_steps: int, batch_size: int = 100) -> None:
         # Update learning rate according to schedule
         self._update_learning_rate(self.policy.optimizer)
@@ -164,13 +176,7 @@ class DQN(OffPolicyAlgorithm):
             with th.no_grad():
 
                 ## --------------------------------- for entropy ---------------------------------
-                # Compute the next Q-values using the target network
-                next_q_values = self.q_net_target(replay_data.next_observations)
-                # shift the q value to have only positiv values
-                next_shifted_q_values = next_q_values - next_q_values.min()
-                # Normalize to get probability of action
-                next_pol_prob = th.nn.functional.normalize(next_shifted_q_values, p=1.0, dim=1, eps=1e-12, out=None)
-                # log probability of actions
+                next_pol_prob = self.softmax_policy(replay_data.next_observations)
                 next_log_prob = th.log(next_pol_prob)
                 # Entropy: SUM p(a)*log(p(a))
                 next_action_entropy_single_values = next_pol_prob * next_log_prob
