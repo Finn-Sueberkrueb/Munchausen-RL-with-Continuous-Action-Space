@@ -152,15 +152,59 @@ class MDQN(OffPolicyAlgorithm):
         self.logger.record("rollout/exploration rate", self.exploration_rate)
 
 
-    def softmax_policy(self, obs):
+    def stable_scaled_log_softmax(self, obs, tau):
+        """Scaled log_softmax operation.
+        Args:
+          x: tensor of floats, inputs of the softmax (logits).
+          tau: float, softmax temperature.
+          axis: int, axis to perform the softmax operation.
+        Returns:
+          tau * tf.log_softmax(x/tau, axis=axis)
+        """
         # obtain q_values from Network
         q_values = self.q_net_target(obs)
+
+        # subtract the highest q_value
+        q_max = th.max(q_values, dim=1, keepdim=True)
+        reduced_q_values = q_values - q_max.values
+
+        tau_lse = q_max.values + tau * th.log(th.exp(reduced_q_values / tau).sum(dim=1 ,keepdim=True))
+
+        return q_values - tau_lse
+
+
+    def stable_softmax(self, obs, tau):
+        """Stable softmax operation.
+        Args:
+          x: tensor of floats, inputs of the softmax (logits).
+          tau: float, softmax temperature.
+          axis: int, axis to perform the softmax operation.
+        Returns:
+          softmax(x/tau, axis=axis)
+        """
+        # obtain q_values from Network
+        q_values = self.q_net_target(obs)
+
+        # subtract the highest q_value
+        q_max = th.max(q_values, dim=1, keepdim=True)
+        reduced_q_values = q_values - q_max.values
+
+        return th.nn.Softmax(reduced_q_values / tau)
+
+
+    def softmax_policy(self, obs):
+
+        # obtain q_values from Network
+        q_values = self.q_net_target(obs)
+
         # calculate denominator of SoftMax {SUM exp(q(s,a))}
         denominator = th.diag(1 / th.exp(q_values).sum(dim=1))
         # use diagonal denominator matrix for elementwise multiplication with nominator
         policy = th.matmul(denominator,th.exp(q_values))
 
         return policy
+
+
 
 
     def train(self, gradient_steps: int, batch_size: int = 100) -> None:
@@ -175,56 +219,43 @@ class MDQN(OffPolicyAlgorithm):
 
             with th.no_grad():
 
-
-                self.softmax_policy(replay_data.observations)
-
-                ## --------------------------------- for Munchausen ---------------------------------
-                # TODO: Can we use the old actions from the reply_buffer with the current network ???
-                last_pol_prob = self.softmax_policy(replay_data.observations)
-                last_log_prob = th.log(last_pol_prob)
-                # get the probability of the selected action
-                last_action_slected_log_prob = th.gather(last_log_prob, dim=1, index=replay_data.actions)
-                # Avoid potential broadcast issue
-                last_action_slected_log_prob = last_action_slected_log_prob.reshape(-1, 1)
-
-                ## --------------------------------- for entropy ---------------------------------
-                next_pol_prob = self.softmax_policy(replay_data.next_observations)
-                next_log_prob = th.log(next_pol_prob)
-                # Entropy: SUM p(a)*log(p(a))
-                next_action_entropy_single_values = next_pol_prob * next_log_prob
-                next_action_entropy = next_action_entropy_single_values.sum(dim=1)
-                # Avoid potential broadcast issue
-                next_action_entropy = next_action_entropy.reshape(-1, 1)
-
-                ## --------------------------------- for next Q-Value ---------------------------------
-                # Compute the next Q-values using the target network
-                next_q_values = self.q_net_target(replay_data.next_observations)
-                # Follow greedy policy: use the one with the highest value
-                next_q_values, _ = next_q_values.max(dim=1)
-                # Avoid potential broadcast issue
-                next_q_values = next_q_values.reshape(-1, 1)
-
-
-                munchausen_clipping_low = -1.0
-                munchausen_clipping_high = 0.0
+                munchausen_clipping_low = -10
+                munchausen_clipping_high = 1.0
                 munchausen_scaling = 0.9
                 tempreture_param = 0.03
 
-                munchausen_values = munchausen_scaling * th.clamp(tempreture_param * last_action_slected_log_prob, munchausen_clipping_low,
-                                              munchausen_clipping_high)
+
+                # tau * ln pi_k+1 (s')
+                replay_next_log_policy = self.stable_scaled_log_softmax(replay_data.next_observations, tempreture_param)
+                # tau * ln pi_k+1(s)
+                replay_log_policy = self.stable_scaled_log_softmax(replay_data.observations, tempreture_param)
+                # pi_k+1(s')
+                replay_next_policy = self.stable_softmax(replay_data.next_observations, tempreture_param).dim
 
 
-                # 1-step TD target
-                target_q_values = replay_data.rewards + munchausen_values \
-                                  + (1 - replay_data.dones) * self.gamma * (next_q_values - tempreture_param * next_action_entropy)
+                replay_next_target_net_outputs = self.q_net_target(replay_data.next_observations)
+
+                replay_next_qt_softmax = ((replay_next_target_net_outputs - replay_next_log_policy) * replay_next_policy).sum(dim=1)
+
+                # tau * ln pi_k+1(a|s)
+                # get the probability of the selected action
+                tau_log_pi_a = th.gather(replay_log_policy, dim=1, index=replay_data.actions)
 
 
-                self.logger.record("munchausen/target_q_values_mean", np.average(th.mean(target_q_values).data.numpy()))
-                self.logger.record("munchausen/next_q_values_mean", np.average(th.mean(next_q_values).data.numpy()))
-                self.logger.record("munchausen/rewards_mean", np.average(th.mean(replay_data.rewards).data.numpy()))
-                self.logger.record("munchausen/last_action_slected_log_prob", np.average(th.mean(last_action_slected_log_prob).data.numpy()))
-                self.logger.record("munchausen/next_action_entropy_mean", np.average(th.mean(-next_action_entropy).data.numpy()))
-                self.logger.record("munchausen/munchausen_values_mean", np.average(th.mean(munchausen_values).data.numpy()))
+                tau_log_pi_a = th.clamp(tau_log_pi_a, munchausen_clipping_low, munchausen_clipping_high)
+
+                munchausen_term = munchausen_scaling * tau_log_pi_a
+
+                target_q_values = (replay_data.rewards + munchausen_term + self.gamma * replay_next_qt_softmax * (1 - replay_data.dones))
+
+
+
+                self.logger.record("munchausen/target_q_values_mean", np.average(th.mean(target_q_values).cpu().data.numpy()))
+                #self.logger.record("munchausen/next_q_values_mean", np.average(th.mean(next_q_values).cpu().data.numpy()))
+                self.logger.record("munchausen/rewards_mean", np.average(th.mean(replay_data.rewards).cpu().data.numpy()))
+                #self.logger.record("munchausen/last_action_slected_log_prob", np.average(th.mean(last_action_slected_log_prob).cpu().data.numpy()))
+                self.logger.record("munchausen/replay_next_log_policy", np.average(th.mean(replay_next_log_policy).cpu().data.numpy()))
+                self.logger.record("munchausen/munchausen_term_mean", np.average(th.mean(munchausen_term).cpu().data.numpy()))
 
                 self.logger.record("munchausen/munchausen_clipping_low", munchausen_clipping_low)
                 self.logger.record("munchausen/munchausen_clipping_high", munchausen_clipping_high)
@@ -295,7 +326,7 @@ class MDQN(OffPolicyAlgorithm):
         eval_env: Optional[GymEnv] = None,
         eval_freq: int = -1,
         n_eval_episodes: int = 5,
-        tb_log_name: str = "DQN",
+        tb_log_name: str = "MDQN",
         eval_log_path: Optional[str] = None,
         reset_num_timesteps: bool = True,
     ) -> OffPolicyAlgorithm:
