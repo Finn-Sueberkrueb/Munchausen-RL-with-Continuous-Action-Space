@@ -32,7 +32,7 @@ conda install tensorboard
 pip install pyyaml
 pip install optuna
 cd ~/Repositories && git clone https://github.com/openai/gym.git
-cd gym && pip install -e .
+cd gym && pip install -e . && pip install -e '.[box2d]'
 cd ~/Repositories && git clone https://github.com/benelot/pybullet-gym.git
 cd pybullet-gym && pip install -e .
 cd ~/Repositories/tum-adlr-ss21-08/stable-baselines3 && pip install -e .
