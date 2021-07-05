@@ -195,10 +195,10 @@ class MSAC(SAC):
                 # target_q_values = replay_data.rewards + (1 - replay_data.dones) * self.gamma * next_q_values
                 # ----- M-SAC -----
                 # ...
-                munchausen_shift = 0.0
+                log_prob_normalized = None
 
                 if (self.munchausen_mode == "no_clipping"):
-                    next_munchausen_values = ent_coef * log_prob.reshape(-1, 1)
+                    next_munchausen_values = ent_coef * log_prob
                     next_munchausen_values = self.munchausen_scaling * next_munchausen_values
 
                     # For logging
@@ -206,29 +206,46 @@ class MSAC(SAC):
                     self.munchausen_clipping_high = None
 
                 elif (self.munchausen_mode == "fix_scale"):
-                    next_munchausen_values = log_prob.reshape(-1, 1)
+                    next_munchausen_values = log_prob
                     next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
                                                                                 self.munchausen_clipping_low,
                                                                                 self.munchausen_clipping_high)
                 elif (self.munchausen_mode == "shift"):
                     # Test implementation shift in range [-1,0]
                     munchausen_shift = 30.0
-                    next_munchausen_values = ent_coef * (log_prob.reshape(-1, 1) - munchausen_shift)
+                    next_munchausen_values = ent_coef * (log_prob - munchausen_shift)
                     next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
                                                                                 self.munchausen_clipping_low,
                                                                                 self.munchausen_clipping_high)
                 elif (self.munchausen_mode == "dynamicshift"):
                     # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
-                    next_munchausen_values = ent_coef * (log_prob.reshape(-1, 1) - th.mean(log_prob.reshape(-1, 1)).data)
+                    next_munchausen_values = ent_coef * (log_prob - th.mean(log_prob))
                     next_munchausen_values = self.munchausen_scaling * next_munchausen_values
 
                     # For logging
-                    self.munchausen_clipping_low = 0
-                    self.munchausen_clipping_high = 0
+                    self.munchausen_clipping_low = None
+                    self.munchausen_clipping_high = None
+
+                elif (self.munchausen_mode == "dynamicshift_normalized"):
+                    # New experimental approach
+                    min_old = th.min(log_prob)
+                    max_old = th.max(log_prob)
+                    min_new = th.ones_like(min_old) * -1
+                    max_new = th.zeros_like(min_old)
+                    range_old = max_old - min_old
+                    range_new = max_new - min_new
+                    scale_factor = range_new / range_old
+                    log_prob_normalized = min_new + (log_prob - min_old) * scale_factor
+                    next_munchausen_values = ent_coef * log_prob_normalized
+                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+
+                    # For logging
+                    self.munchausen_clipping_low = None
+                    self.munchausen_clipping_high = None
 
                 else :
                     # Default M-SAC
-                    next_munchausen_values = ent_coef * log_prob.reshape(-1, 1)
+                    next_munchausen_values = ent_coef * log_prob
                     next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
                                                                                 self.munchausen_clipping_low,
                                                                                 self.munchausen_clipping_high)
@@ -279,8 +296,9 @@ class MSAC(SAC):
         self.logger.record("munchausen/munchausen_scaling", self.munchausen_scaling)
         self.logger.record("munchausen/next_munchausen_values", np.average(next_munchausen_values))
         self.logger.record("munchausen/munchausen_fraction", np.average((abs(next_munchausen_values) / target_q_values)))
-        self.logger.record("munchausen/log_policy", log_prob.reshape(-1, 1) - munchausen_shift)
+        self.logger.record("munchausen/log_policy", log_prob)
         self.logger.record("munchausen/next_q_values", np.average(next_q_values))
+        self.logger.record("munchausen/log_policy_normalized", log_prob_normalized)
 
         self.logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
         self.logger.record("train/ent_coef", np.mean(ent_coefs))
