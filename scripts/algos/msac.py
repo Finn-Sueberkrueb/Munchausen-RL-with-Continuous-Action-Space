@@ -138,6 +138,9 @@ class MSAC(SAC):
         self.munchausen_clipping_high = munchausen_clipping_high
         self.munchausen_mode = munchausen_mode
 
+        self.log_prob_min = 1e9
+        self.log_prob_max = -1e9
+
     def train(self, gradient_steps: int, batch_size: int = 64) -> None:
         # Update optimizers learning rate
         optimizers = [self.actor.optimizer, self.critic.optimizer]
@@ -228,8 +231,25 @@ class MSAC(SAC):
 
                 elif (self.munchausen_mode == "dynamicshift_normalized"):
                     # New experimental approach
+                    """                     
                     min_old = th.min(log_prob)
                     max_old = th.max(log_prob)
+                    min_new = th.ones_like(min_old) * -1
+                    max_new = th.zeros_like(min_old)
+                    range_old = max_old - min_old
+                    range_new = max_new - min_new
+                    scale_factor = range_new / range_old
+                    log_prob_normalized = min_new + (log_prob - min_old) * scale_factor
+                    next_munchausen_values = ent_coef * log_prob_normalized
+                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+                    """
+                    # New experimental approach 2
+                    if (th.min(log_prob) < self.log_prob_min):
+                        self.log_prob_min = th.min(log_prob)
+                    if (th.max(log_prob) > self.log_prob_max):
+                        self.log_prob_max = th.max(log_prob)
+                    min_old = self.log_prob_min
+                    max_old = self.log_prob_max
                     min_new = th.ones_like(min_old) * -1
                     max_new = th.zeros_like(min_old)
                     range_old = max_old - min_old
