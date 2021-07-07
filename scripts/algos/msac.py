@@ -229,6 +229,15 @@ class MSAC(SAC):
                     self.munchausen_clipping_low = None
                     self.munchausen_clipping_high = None
 
+                elif (self.munchausen_mode == "dynamicshift_max"):
+                    # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
+                    next_munchausen_values = ent_coef * (log_prob - th.max(log_prob))
+                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+
+                    # For logging
+                    self.munchausen_clipping_low = None
+                    self.munchausen_clipping_high = None
+
                 elif (self.munchausen_mode == "dynamicshift_normalized"):
                     # New experimental approach
                     """                     
