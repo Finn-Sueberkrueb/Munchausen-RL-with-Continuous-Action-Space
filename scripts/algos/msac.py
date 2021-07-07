@@ -223,8 +223,8 @@ class MSAC(SAC):
                     next_munchausen_values = self.munchausen_scaling * next_munchausen_values
 
                     # For logging
-                    self.munchausen_clipping_low = 0
-                    self.munchausen_clipping_high = 0
+                    self.munchausen_clipping_low = None
+                    self.munchausen_clipping_high = None
 
                 else :
                     # Default M-SAC
