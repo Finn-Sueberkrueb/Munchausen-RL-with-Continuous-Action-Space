@@ -23,6 +23,8 @@ Update VM repos\
 Train in background process and redirect output to file\
 `nohup python train.py --algo msac --env HalfCheetahBulletEnv-v0 --tensorboard-log logs/tensorboard --n-timesteps 1000000 --seed 1 > msac.out &`
 
+`nohup python scripts/run_jobs.py > msac.out &`
+
 Visualize trained agent\
 `python enjoy.py --algo sac --env HopperBulletEnv-v0 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --n-timesteps 1000`
 
