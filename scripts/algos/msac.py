@@ -100,7 +100,8 @@ class MSAC(SAC):
         munchausen_scaling: float = 0.9,
         munchausen_clipping_low: float = -1.0,
         munchausen_clipping_high: float = 0.0, # TODO: How to choose the clipping values
-        munchausen_mode: str = "default"
+        munchausen_mode: str = "default",
+        reward_div: float = 1.0
     ):
 
         super(MSAC, self).__init__(
@@ -137,6 +138,7 @@ class MSAC(SAC):
         self.munchausen_clipping_low = munchausen_clipping_low
         self.munchausen_clipping_high = munchausen_clipping_high
         self.munchausen_mode = munchausen_mode
+        self.reward_div = reward_div
 
         self.log_prob_min = 1e9
         self.log_prob_max = -1e9
@@ -280,7 +282,7 @@ class MSAC(SAC):
                                                                                 self.munchausen_clipping_high)
 
                 # td error + Munchausen term + entropy term
-                target_q_values = replay_data.rewards + next_munchausen_values \
+                target_q_values = replay_data.rewards*self.reward_div + next_munchausen_values \
                                   + (1 - replay_data.dones) * self.gamma * next_q_values
 
             # Get current Q-values estimates for each critic network

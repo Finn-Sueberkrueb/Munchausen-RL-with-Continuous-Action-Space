@@ -101,6 +101,7 @@ class SAC(OffPolicyAlgorithm):
         seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
         _init_setup_model: bool = True,
+        reward_div: float = 1.0
     ):
 
         super(SAC, self).__init__(
@@ -138,6 +139,7 @@ class SAC(OffPolicyAlgorithm):
         self.ent_coef = ent_coef
         self.target_update_interval = target_update_interval
         self.ent_coef_optimizer = None
+        self.reward_div = reward_div
 
         if _init_setup_model:
             self._setup_model()
@@ -149,6 +151,7 @@ class SAC(OffPolicyAlgorithm):
         if self.target_entropy == "auto":
             # automatically set target entropy if needed
             self.target_entropy = -np.prod(self.env.action_space.shape).astype(np.float32)
+            print("auto target entropy set to: " + str(self.target_entropy))
         else:
             # Force conversion
             # this will also throw an error for unexpected string
@@ -232,7 +235,7 @@ class SAC(OffPolicyAlgorithm):
                 # add entropy term
                 next_q_values = next_q_values - ent_coef * next_log_prob.reshape(-1, 1)
                 # td error + entropy term
-                target_q_values = replay_data.rewards + (1 - replay_data.dones) * self.gamma * next_q_values
+                target_q_values = replay_data.rewards*self.reward_div + (1 - replay_data.dones) * self.gamma * next_q_values
 
             # Get current Q-values estimates for each critic network
             # using action from the replay buffer
