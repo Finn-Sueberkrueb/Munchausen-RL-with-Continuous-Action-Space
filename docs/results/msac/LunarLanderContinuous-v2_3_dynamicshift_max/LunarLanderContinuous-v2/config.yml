@@ -18,7 +18,11 @@
   - - munchausen_clipping_low
     - -1
   - - munchausen_mode
+<<<<<<< HEAD:docs/results/msac/LunarLanderContinuous-v2_3_dynamicshift_max/LunarLanderContinuous-v2/config.yml
     - dynamicshift_max
+=======
+    - dynamicshift
+>>>>>>> 764642c (reward scale trainings addes):docs/results/msac/AntBulletEnv-v0_1_dynamicshift_mean_rewardscale_01/AntBulletEnv-v0/config.yml
   - - munchausen_scaling
     - 0.9
   - - n_timesteps
@@ -26,7 +30,13 @@
   - - policy
     - MlpPolicy
   - - policy_kwargs
+<<<<<<< HEAD:docs/results/msac/LunarLanderContinuous-v2_3_dynamicshift_max/LunarLanderContinuous-v2/config.yml
     - dict(net_arch=[400, 300])
+=======
+    - dict(log_std_init=-3, net_arch=[400, 300])
+  - - reward_div
+    - 0.1
+>>>>>>> 764642c (reward scale trainings addes):docs/results/msac/AntBulletEnv-v0_1_dynamicshift_mean_rewardscale_01/AntBulletEnv-v0/config.yml
   - - tau
     - 0.01
   - - train_freq

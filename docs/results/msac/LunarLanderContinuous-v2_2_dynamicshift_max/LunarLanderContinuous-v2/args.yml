@@ -12,7 +12,7 @@
   - - gym_packages
     - []
   - - hyperparams
-    - null
+    - munchausen_mode: dynamicshift
   - - log_folder
     - logs
   - - log_interval
@@ -42,7 +42,7 @@
   - - save_replay_buffer
     - false
   - - seed
-    - 2
+    - 1
   - - storage
     - null
   - - study_name

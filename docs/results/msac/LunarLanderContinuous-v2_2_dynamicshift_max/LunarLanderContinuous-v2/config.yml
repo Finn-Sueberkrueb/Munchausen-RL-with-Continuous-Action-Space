@@ -18,7 +18,11 @@
   - - munchausen_clipping_low
     - -1
   - - munchausen_mode
+<<<<<<< HEAD:docs/results/msac/LunarLanderContinuous-v2_2_dynamicshift_max/LunarLanderContinuous-v2/config.yml
     - dynamicshift_max
+=======
+    - dynamicshift
+>>>>>>> 764642c (reward scale trainings addes):docs/results/msac/AntBulletEnv-v0_1_dynamicshift_mean_rewardx0-8/AntBulletEnv-v0/config.yml
   - - munchausen_scaling
     - 0.9
   - - n_timesteps
