@@ -2,7 +2,11 @@
 - - - algo
     - msac
   - - env
+<<<<<<< HEAD
     - LunarLanderContinuous-v2
+=======
+    - MountainCarContinuous-v0
+>>>>>>> 764642c (reward scale trainings addes)
   - - env_kwargs
     - null
   - - eval_episodes

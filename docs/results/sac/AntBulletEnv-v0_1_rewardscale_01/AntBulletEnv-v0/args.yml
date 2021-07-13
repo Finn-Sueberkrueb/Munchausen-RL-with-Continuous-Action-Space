@@ -2,7 +2,11 @@
 - - - algo
     - sac
   - - env
+<<<<<<< HEAD
     - MountainCarContinuous-v0
+=======
+    - LunarLanderContinuous-v2
+>>>>>>> 764642c (reward scale trainings addes)
   - - env_kwargs
     - null
   - - eval_episodes
@@ -42,7 +46,11 @@
   - - save_replay_buffer
     - false
   - - seed
+<<<<<<< HEAD
     - 3
+=======
+    - 1
+>>>>>>> 764642c (reward scale trainings addes)
   - - storage
     - null
   - - study_name

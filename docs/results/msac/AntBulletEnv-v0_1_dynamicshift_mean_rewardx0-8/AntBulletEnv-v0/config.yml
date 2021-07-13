@@ -2,6 +2,7 @@
 - - - batch_size
     - 256
   - - buffer_size
+<<<<<<< HEAD
     - 1000000
   - - ent_coef
     - auto
@@ -11,6 +12,17 @@
     - 1
   - - learning_rate
     - lin_7.3e-4
+=======
+    - 300000
+  - - ent_coef
+    - auto
+  - - gamma
+    - 0.98
+  - - gradient_steps
+    - 64
+  - - learning_rate
+    - 0.00073
+>>>>>>> 764642c (reward scale trainings addes)
   - - learning_starts
     - 10000
   - - munchausen_clipping_high
@@ -18,6 +30,7 @@
   - - munchausen_clipping_low
     - -1
   - - munchausen_mode
+<<<<<<< HEAD
 <<<<<<< HEAD:docs/results/msac/LunarLanderContinuous-v2_2_dynamicshift_max/LunarLanderContinuous-v2/config.yml
     - dynamicshift_max
 =======
@@ -35,3 +48,22 @@
     - 0.01
   - - train_freq
     - 1
+=======
+    - dynamicshift
+  - - munchausen_scaling
+    - 0.9
+  - - n_timesteps
+    - 1000000.0
+  - - policy
+    - MlpPolicy
+  - - policy_kwargs
+    - dict(log_std_init=-3, net_arch=[400, 300])
+  - - reward_div
+    - 0.3
+  - - tau
+    - 0.02
+  - - train_freq
+    - 64
+  - - use_sde
+    - true
+>>>>>>> 764642c (reward scale trainings addes)

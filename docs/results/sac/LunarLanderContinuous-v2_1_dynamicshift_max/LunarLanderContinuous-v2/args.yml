@@ -12,7 +12,7 @@
   - - gym_packages
     - []
   - - hyperparams
-    - null
+    - reward_div: 0.1
   - - log_folder
     - logs
   - - log_interval
