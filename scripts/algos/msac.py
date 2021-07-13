@@ -101,7 +101,8 @@ class MSAC(SAC):
         munchausen_clipping_low: float = -1.0,
         munchausen_clipping_high: float = 0.0, # TODO: How to choose the clipping values
         munchausen_mode: str = "default",
-        reward_div: float = 1.0
+        reward_scale: float = 1.0,
+        dynamicshift_hyperparameter: float = 0.0
     ):
 
         super(MSAC, self).__init__(
@@ -138,7 +139,8 @@ class MSAC(SAC):
         self.munchausen_clipping_low = munchausen_clipping_low
         self.munchausen_clipping_high = munchausen_clipping_high
         self.munchausen_mode = munchausen_mode
-        self.reward_div = reward_div
+        self.reward_scale = reward_scale
+        self.dynamicshift_hyperparameter = dynamicshift_hyperparameter
 
         self.log_prob_min = 1e9
         self.log_prob_max = -1e9
@@ -231,6 +233,19 @@ class MSAC(SAC):
                     self.munchausen_clipping_low = None
                     self.munchausen_clipping_high = None
 
+                elif (self.munchausen_mode == "dynamicshift_hyper"):
+                    # With hyperparameter for dynamic shift:
+                    # -1 = dynamicshift_max
+                    #  0 = dynamicshift_mean
+                    #  1 = dynamicshift_min
+
+                    next_munchausen_values = ent_coef * (log_prob - th.mean(log_prob) + self.dynamicshift_hyperparameter * (th.max(log_prob)-th.mean(log_prob)))
+                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+
+                    # For logging
+                    self.munchausen_clipping_low = None
+                    self.munchausen_clipping_high = None
+
                 elif (self.munchausen_mode == "dynamicshift_max"):
                     # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
                     next_munchausen_values = ent_coef * (log_prob - th.max(log_prob))
@@ -282,7 +297,7 @@ class MSAC(SAC):
                                                                                 self.munchausen_clipping_high)
 
                 # td error + Munchausen term + entropy term
-                target_q_values = replay_data.rewards*self.reward_div + next_munchausen_values \
+                target_q_values = replay_data.rewards*self.reward_scale + next_munchausen_values \
                                   + (1 - replay_data.dones) * self.gamma * next_q_values
 
             # Get current Q-values estimates for each critic network
