@@ -238,12 +238,19 @@ class MSAC(SAC):
                     #  1 = dynamicshift_min
 
                     if self.dynamicshift_hyperparameter <= 0.0:
-                        next_munchausen_values = log_prob - (1 + self.dynamicshift_hyperparameter) * th.mean(log_prob) + self.dynamicshift_hyperparameter * th.max(log_prob)
+                        next_munchausen_values = ent_coef * (log_prob
+                                                             - (1.0 + self.dynamicshift_hyperparameter) * th.mean(log_prob)
+                                                             + self.dynamicshift_hyperparameter * th.max(log_prob))
                     else:
-                        next_munchausen_values = log_prob + (self.dynamicshift_hyperparameter - 1) * th.mean(log_prob) - self.dynamicshift_hyperparameter * th.min(log_prob)
+                        next_munchausen_values = ent_coef * (log_prob
+                                                             + (self.dynamicshift_hyperparameter - 1.0) * th.mean(log_prob)
+                                                             - self.dynamicshift_hyperparameter * th.min(log_prob))
 
-                    self.logger.record("munchausen/log_policy_shifted", next_munchausen_values)
-                    next_munchausen_values = self.munchausen_scaling * ent_coef * next_munchausen_values
+
+                    self.logger.record("munchausen/log_policy_shifted", next_munchausen_values/ent_coef)
+                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+
+
 
                     # For logging
                     self.munchausen_clipping_low = None
@@ -265,6 +272,7 @@ class MSAC(SAC):
                 elif (self.munchausen_mode == "dynamicshift_max"):
                     # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
                     next_munchausen_values = ent_coef * (log_prob - th.max(log_prob))
+                    self.logger.record("munchausen/log_policy_shifted", next_munchausen_values/ent_coef)
                     next_munchausen_values = self.munchausen_scaling * next_munchausen_values
 
                     # For logging
