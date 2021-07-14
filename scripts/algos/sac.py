@@ -102,9 +102,12 @@ class SAC(OffPolicyAlgorithm):
         device: Union[th.device, str] = "auto",
         _init_setup_model: bool = True,
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         reward_scale: float = 1.0
 >>>>>>> 764642c (reward scale trainings addes)
+=======
+>>>>>>> 8553e24 (dynamic shift mean hyperparameter search.)
     ):
 
         super(SAC, self).__init__(
@@ -143,9 +146,12 @@ class SAC(OffPolicyAlgorithm):
         self.target_update_interval = target_update_interval
         self.ent_coef_optimizer = None
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         self.reward_scale = reward_scale
 >>>>>>> 764642c (reward scale trainings addes)
+=======
+>>>>>>> 8553e24 (dynamic shift mean hyperparameter search.)
 
         if _init_setup_model:
             self._setup_model()
@@ -241,10 +247,14 @@ class SAC(OffPolicyAlgorithm):
                 next_q_values = next_q_values - ent_coef * next_log_prob.reshape(-1, 1)
                 # td error + entropy term
 <<<<<<< HEAD
+<<<<<<< HEAD
                 target_q_values = replay_data.rewards + (1 - replay_data.dones) * self.gamma * next_q_values
 =======
                 target_q_values = replay_data.rewards*self.reward_scale + (1 - replay_data.dones) * self.gamma * next_q_values
 >>>>>>> 764642c (reward scale trainings addes)
+=======
+                target_q_values = replay_data.rewards + (1 - replay_data.dones) * self.gamma * next_q_values
+>>>>>>> 8553e24 (dynamic shift mean hyperparameter search.)
 
             # Get current Q-values estimates for each critic network
             # using action from the replay buffer
