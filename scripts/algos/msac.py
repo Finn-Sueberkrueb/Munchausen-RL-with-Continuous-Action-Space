@@ -100,7 +100,8 @@ class MSAC(SAC):
         munchausen_scaling: float = 0.9,
         munchausen_clipping_low: float = -1.0,
         munchausen_clipping_high: float = 0.0, # TODO: How to choose the clipping values
-        munchausen_mode: str = "default"
+        munchausen_mode: str = "default",
+        dynamicshift_hyperparameter: float = 0.0
     ):
 
         super(MSAC, self).__init__(
@@ -137,6 +138,7 @@ class MSAC(SAC):
         self.munchausen_clipping_low = munchausen_clipping_low
         self.munchausen_clipping_high = munchausen_clipping_high
         self.munchausen_mode = munchausen_mode
+        self.dynamicshift_hyperparameter = dynamicshift_hyperparameter
 
         self.log_prob_min = 1e9
         self.log_prob_max = -1e9
@@ -235,16 +237,26 @@ class MSAC(SAC):
                     #  0 = dynamicshift_mean
                     #  1 = dynamicshift_min
 
-                    #next_munchausen_values = ent_coef * (log_prob - th.mean(log_prob) + self.dynamicshift_hyperparameter * (th.max(log_prob) - th.mean(log_prob)))
-                    next_munchausen_values = ent_coef * (log_prob - th.mean(log_prob) + self.dynamicshift_hyperparameter)
+                    if self.dynamicshift_hyperparameter <= 0.0:
+                        next_munchausen_values = ent_coef * (log_prob
+                                                             - (1.0 + self.dynamicshift_hyperparameter) * th.mean(log_prob)
+                                                             + self.dynamicshift_hyperparameter * th.max(log_prob))
+                    else:
+                        next_munchausen_values = ent_coef * (log_prob
+                                                             + (self.dynamicshift_hyperparameter - 1.0) * th.mean(log_prob)
+                                                             - self.dynamicshift_hyperparameter * th.min(log_prob))
 
+
+                    self.logger.record("munchausen/log_policy_shifted", next_munchausen_values/ent_coef)
                     next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+
+
 
                     # For logging
                     self.munchausen_clipping_low = None
                     self.munchausen_clipping_high = None
 
-                    self.logger.record("munchausen/log_policy_shifted", next_munchausen_values)
+
 
                 elif (self.munchausen_mode == "dynamicshift_median"):
 
@@ -260,6 +272,7 @@ class MSAC(SAC):
                 elif (self.munchausen_mode == "dynamicshift_max"):
                     # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
                     next_munchausen_values = ent_coef * (log_prob - th.max(log_prob))
+                    self.logger.record("munchausen/log_policy_shifted", next_munchausen_values/ent_coef)
                     next_munchausen_values = self.munchausen_scaling * next_munchausen_values
 
                     # For logging
