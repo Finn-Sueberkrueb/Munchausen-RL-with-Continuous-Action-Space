@@ -251,6 +251,14 @@ class MSAC(SAC):
                     next_munchausen_values = self.munchausen_scaling * next_munchausen_values
 
 
+                elif (self.munchausen_mode == "dynamicmean_hyper"):
+                    # With hyperparameter for dynamic shift mean:
+                    #  0 = dynamicshift_mean
+
+                    next_munchausen_values = ent_coef * (log_prob - th.mean(log_prob) + self.dynamicshift_hyperparameter)
+
+                    self.logger.record("munchausen/log_policy_shifted", next_munchausen_values / ent_coef)
+                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
 
                     # For logging
                     self.munchausen_clipping_low = None
