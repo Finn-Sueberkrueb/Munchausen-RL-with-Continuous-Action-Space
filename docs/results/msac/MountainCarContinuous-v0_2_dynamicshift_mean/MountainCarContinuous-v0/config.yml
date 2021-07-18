@@ -1,0 +1,37 @@
+!!python/object/apply:collections.OrderedDict
+- - - batch_size
+    - 512
+  - - buffer_size
+    - 50000
+  - - dynamicshift_hyperparameter
+    - 0.0
+  - - ent_coef
+    - 0.1
+  - - gamma
+    - 0.9999
+  - - gradient_steps
+    - 32
+  - - learning_rate
+    - 0.0003
+  - - learning_starts
+    - 0
+  - - munchausen_clipping_high
+    - 0
+  - - munchausen_clipping_low
+    - -1
+  - - munchausen_mode
+    - dynamicshift
+  - - munchausen_scaling
+    - 0.9
+  - - n_timesteps
+    - 50000.0
+  - - policy
+    - MlpPolicy
+  - - policy_kwargs
+    - dict(log_std_init=-3.67, net_arch=[64, 64])
+  - - tau
+    - 0.01
+  - - train_freq
+    - 32
+  - - use_sde
+    - true
