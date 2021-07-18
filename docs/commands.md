@@ -16,6 +16,7 @@ Update VM repos\
 `git pull`\
 `git submodule update --recursive`
 
+`git merge <branch> --no-commit --no-ff`
 ### Start important scripts
 
 `cd rl-baselines3-zoo`
@@ -34,7 +35,9 @@ with changed enjoy.py file to select the file directly
 Plot training success (y-axis) w.r.t. timesteps (x-axis) with a moving window of 500 episodes\
 `python scripts/plot_train.py --algo sac msac --env HopperBulletEnv-v0 --y-axis reward --x-axis steps --exp-folder ~/Repositories/tum-adlr-ss21-08/docs/results/ --episode-window 500`
 
-`python scripts/all_plots.py -a sac msac --env HalfCheetahBulletEnv-v0 AntBulletEnv-v0 HopperBulletEnv-v0 Walker2DBulletEnv-v0 --print-n-trials -max 1000000 -exp dynamicshift_mean dynamicshift_max dynamicshift_min original -f /Users/Marcel/Repositories/tum-adlr-ss21-08/docs/results /Users/Marcel/Repositories/tum-adlr-ss21-08/docs/results/archive`
+`python scripts/all_plots.py -a sac msac --env HalfCheetahBulletEnv-v0 AntBulletEnv-v0 HopperBulletEnv-v0 Walker2DBulletEnv-v0 --print-n-trials -max 1000000 -exp dynamicshift_mean dynamicshift_max dynamicshift_min original -f /Users/Marcel/Repositories/tum-adlr-ss21-08/docs/results /Users/Marcel/Repositories/tum-adlr-ss21-08/docs/results/archive -l ./results ./results/archive`
+
+`python scripts/plot_from_tensorboard.py -a sac msac --env HalfCheetahBulletEnv-v0 AntBulletEnv-v0 HopperBulletEnv-v0 Walker2DBulletEnv-v0 --print-n-trials -max 1000000 -exp dynamicshift_mean dynamicshift_max dynamicshift_min original -f /Users/Marcel/Repositories/tum-adlr-ss21-08/docs/results /Users/Marcel/Repositories/tum-adlr-ss21-08/docs/results/archive -l ./results ./results/archive -t train/std`
 
 `python -m utils.record_video --algo sac --env AntBulletEnv-v0 -n 1000 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --output-folder ~/Repositories/tum-adlr-ss21-08/docs/images/videos --exp-id 1`
 
