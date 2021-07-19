@@ -391,7 +391,7 @@ class MSAC(SAC):
         self.logger.record("munchausen/munchausen_scaling", self.munchausen_scaling)
         self.logger.record("munchausen/next_munchausen_values", np.average(next_munchausen_values))
         self.logger.record("munchausen/munchausen_fraction", np.average((abs(next_munchausen_values) / target_q_values)))
-        self.logger.record("munchausen/log_policy", log_prob)
+        self.logger.record("munchausen/replay_log_prob", replay_log_prob)
         self.logger.record("munchausen/next_q_values", np.average(next_q_values))
         self.logger.record("munchausen/log_policy_normalized", log_prob_normalized)
 
