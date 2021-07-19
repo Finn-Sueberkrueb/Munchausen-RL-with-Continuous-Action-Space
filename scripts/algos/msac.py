@@ -277,6 +277,17 @@ class MSAC(SAC):
 
                     self.logger.record("munchausen/log_policy_shifted_median", next_munchausen_values)
 
+                elif (self.munchausen_mode == "dynamicshift_target_entropy"):
+
+                    next_munchausen_values = ent_coef * (log_prob - abs(self.target_entropy))
+                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+
+                    # For logging
+                    self.munchausen_clipping_low = None
+                    self.munchausen_clipping_high = None
+                    self.logger.record("munchausen/target_entropy", self.target_entropy)
+                    self.logger.record("munchausen/log_policy_shifted_target_entropy", next_munchausen_values)
+
                 elif (self.munchausen_mode == "dynamicshift_max"):
                     # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
                     next_munchausen_values = ent_coef * (log_prob - th.max(log_prob))
