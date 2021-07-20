@@ -99,7 +99,7 @@ class MSAC(SAC):
         _init_setup_model: bool = True,
         munchausen_scaling: float = 0.9,
         munchausen_clipping_low: float = -1.0,
-        munchausen_clipping_high: float = 0.0, # TODO: How to choose the clipping values
+        munchausen_clipping_high: float = 1.0,
         munchausen_mode: str = "default",
         dynamicshift_hyperparameter: float = 0.0
     ):
@@ -167,6 +167,10 @@ class MSAC(SAC):
             actions_pi, log_prob = self.actor.action_log_prob(replay_data.observations)
             log_prob = log_prob.reshape(-1, 1)
 
+            # log prob based on actions and observations from the replay buffer
+            _, replay_log_prob = self.actor.replay_action_log_prob(replay_data.actions, replay_data.observations)
+            replay_log_prob = replay_log_prob.reshape(-1, 1)
+
             ent_coef_loss = None
             if self.ent_coef_optimizer is not None:
                 # Important: detach the variable from the graph
@@ -195,16 +199,37 @@ class MSAC(SAC):
                 next_q_values, _ = th.min(next_q_values, dim=1, keepdim=True)
                 # add entropy term
                 next_q_values = next_q_values - ent_coef * next_log_prob.reshape(-1, 1)
-                # ----- SAC -----
 
+                if (self.munchausen_mode == "no_clipping"):
+                    next_munchausen_values = ent_coef * replay_log_prob
+                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
 
-                # log prob based on actions and observations from the replay buffer
-                _, replay_log_prob = self.actor.replay_action_log_prob(replay_data.actions, replay_data.observations)
-                replay_log_prob = replay_log_prob.reshape(-1, 1)
+                    # For logging
+                    self.munchausen_clipping_low = None
+                    self.munchausen_clipping_high = None
+                elif (self.munchausen_mode == "dynamicshift_clipping"):
+                    # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
+                    next_munchausen_values = ent_coef * (replay_log_prob - th.mean(replay_log_prob))
+                    self.logger.record("munchausen/replay_log_prob_shifted", next_munchausen_values/ent_coef)
+                    replay_log_prob_shifted_mean = (th.mean(next_munchausen_values/ent_coef).data.numpy())
+                    self.logger.record("munchausen/replay_log_prob_shifted_mean", np.average(replay_log_prob_shifted_mean))
 
-                # Default M-SAC
-                next_munchausen_values = ent_coef * replay_log_prob
-                next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values, -1, 1)
+                    next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values, self.munchausen_clipping_low, self.munchausen_clipping_high)
+
+                elif (self.munchausen_mode == "dynamicshift_no_clipping"):
+                    # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
+                    next_munchausen_values = ent_coef * (replay_log_prob - th.mean(replay_log_prob))
+                    self.logger.record("munchausen/replay_log_prob_shifted", next_munchausen_values/ent_coef)
+                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+
+                    # For logging
+                    self.munchausen_clipping_low = None
+                    self.munchausen_clipping_high = None
+
+                else:
+                    # Default M-SAC
+                    next_munchausen_values = ent_coef * replay_log_prob
+                    next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values, self.munchausen_clipping_low, self.munchausen_clipping_high)
 
                 # td error + Munchausen term + entropy term
                 target_q_values = replay_data.rewards + next_munchausen_values + (1 - replay_data.dones) * self.gamma * next_q_values
