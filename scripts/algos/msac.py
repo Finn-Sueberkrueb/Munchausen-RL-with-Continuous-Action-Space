@@ -196,160 +196,18 @@ class MSAC(SAC):
                 # add entropy term
                 next_q_values = next_q_values - ent_coef * next_log_prob.reshape(-1, 1)
                 # ----- SAC -----
-                # td error + entropy term
-                # target_q_values = replay_data.rewards + (1 - replay_data.dones) * self.gamma * next_q_values
-                # ----- M-SAC -----
-                # ...
-                log_prob_normalized = None
+
 
                 # log prob based on actions and observations from the replay buffer
-                actions_pi, replay_log_prob = self.actor.replay_action_log_prob(replay_data.actions, replay_data.observations)
+                _, replay_log_prob = self.actor.replay_action_log_prob(replay_data.actions, replay_data.observations)
                 replay_log_prob = replay_log_prob.reshape(-1, 1)
 
-                munchausen_ent_coef = 0.03 #ent_coef
-
-                if (self.munchausen_mode == "no_clipping"):
-
-
-                    next_munchausen_values = munchausen_ent_coef * replay_log_prob
-                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-
-                    # For logging
-                    self.munchausen_clipping_low = None
-                    self.munchausen_clipping_high = None
-
-                elif (self.munchausen_mode == "fix_scale"):
-                    next_munchausen_values = replay_log_prob
-                    next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
-                                                                                self.munchausen_clipping_low,
-                                                                                self.munchausen_clipping_high)
-                elif (self.munchausen_mode == "shift"):
-                    # Test implementation shift in range [-1,0]
-                    munchausen_shift = 30.0
-                    next_munchausen_values = munchausen_ent_coef * (replay_log_prob - munchausen_shift)
-                    next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
-                                                                                self.munchausen_clipping_low,
-                                                                                self.munchausen_clipping_high)
-                elif (self.munchausen_mode == "dynamicshift"):
-                    # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
-                    next_munchausen_values = munchausen_ent_coef * (replay_log_prob - th.mean(replay_log_prob))
-                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-
-                    # For logging
-                    self.munchausen_clipping_low = None
-                    self.munchausen_clipping_high = None
-
-                elif (self.munchausen_mode == "dynamicshift_hyper"):
-                    # With hyperparameter for dynamic shift:
-                    # -1 = dynamicshift_max
-                    #  0 = dynamicshift_mean
-                    #  1 = dynamicshift_min
-
-                    if self.dynamicshift_hyperparameter <= 0.0:
-                        next_munchausen_values = munchausen_ent_coef * (replay_log_prob
-                                                             - (1.0 + self.dynamicshift_hyperparameter) * th.mean(replay_log_prob)
-                                                             + self.dynamicshift_hyperparameter * th.max(replay_log_prob))
-                    else:
-                        next_munchausen_values = munchausen_ent_coef * (replay_log_prob
-                                                             + (self.dynamicshift_hyperparameter - 1.0) * th.mean(replay_log_prob)
-                                                             - self.dynamicshift_hyperparameter * th.min(replay_log_prob))
-
-
-                    self.logger.record("munchausen/log_policy_shifted", next_munchausen_values/munchausen_ent_coef)
-                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-
-
-                elif (self.munchausen_mode == "dynamicmean_hyper"):
-                    # With hyperparameter for dynamic shift mean:
-                    #  0 = dynamicshift_mean
-
-                    next_munchausen_values = munchausen_ent_coef * (replay_log_prob - th.mean(replay_log_prob) + self.dynamicshift_hyperparameter)
-
-                    self.logger.record("munchausen/log_policy_shifted", next_munchausen_values / munchausen_ent_coef)
-                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-
-                    # For logging
-                    self.munchausen_clipping_low = None
-                    self.munchausen_clipping_high = None
-
-
-
-                elif (self.munchausen_mode == "dynamicshift_median"):
-
-                    next_munchausen_values = munchausen_ent_coef * (replay_log_prob - th.median(replay_log_prob))
-                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-
-                    # For logging
-                    self.munchausen_clipping_low = None
-                    self.munchausen_clipping_high = None
-
-                    self.logger.record("munchausen/log_policy_shifted_median", next_munchausen_values)
-
-                elif (self.munchausen_mode == "dynamicshift_target_entropy"):
-
-                    next_munchausen_values = munchausen_ent_coef * (replay_log_prob - abs(self.target_entropy))
-                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-
-                    # For logging
-                    self.munchausen_clipping_low = None
-                    self.munchausen_clipping_high = None
-                    self.logger.record("munchausen/target_entropy", self.target_entropy)
-                    self.logger.record("munchausen/log_policy_shifted_target_entropy", next_munchausen_values)
-
-                elif (self.munchausen_mode == "dynamicshift_max"):
-                    # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
-                    next_munchausen_values = munchausen_ent_coef * (replay_log_prob - th.max(replay_log_prob))
-                    self.logger.record("munchausen/log_policy_shifted", next_munchausen_values/munchausen_ent_coef)
-                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-
-                    # For logging
-                    self.munchausen_clipping_low = None
-                    self.munchausen_clipping_high = None
-
-                elif (self.munchausen_mode == "dynamicshift_normalized"):
-                    # New experimental approach
-                    """                     
-                    min_old = th.min(replay_log_prob)
-                    max_old = th.max(replay_log_prob)
-                    min_new = th.ones_like(min_old) * -1
-                    max_new = th.zeros_like(min_old)
-                    range_old = max_old - min_old
-                    range_new = max_new - min_new
-                    scale_factor = range_new / range_old
-                    log_prob_normalized = min_new + (replay_log_prob - min_old) * scale_factor
-                    next_munchausen_values = munchausen_ent_coef * log_prob_normalized
-                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-                    """
-                    # New experimental approach 2
-                    if (th.min(replay_log_prob) < self.log_prob_min):
-                        self.log_prob_min = th.min(replay_log_prob)
-                    if (th.max(replay_log_prob) > self.log_prob_max):
-                        self.log_prob_max = th.max(replay_log_prob)
-                    min_old = self.log_prob_min
-                    max_old = self.log_prob_max
-                    min_new = th.ones_like(min_old) * -1
-                    max_new = th.zeros_like(min_old)
-                    range_old = max_old - min_old
-                    range_new = max_new - min_new
-                    scale_factor = range_new / range_old
-                    log_prob_normalized = min_new + (replay_log_prob - min_old) * scale_factor
-                    next_munchausen_values = munchausen_ent_coef * log_prob_normalized
-                    next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-
-                    # For logging
-                    self.munchausen_clipping_low = None
-                    self.munchausen_clipping_high = None
-
-                else :
-                    # Default M-SAC
-                    next_munchausen_values = munchausen_ent_coef * replay_log_prob
-                    next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
-                                                                                self.munchausen_clipping_low,
-                                                                                self.munchausen_clipping_high)
+                # Default M-SAC
+                next_munchausen_values = ent_coef * replay_log_prob
+                next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values, -1, 1)
 
                 # td error + Munchausen term + entropy term
-                target_q_values = replay_data.rewards + next_munchausen_values \
-                                  + (1 - replay_data.dones) * self.gamma * next_q_values
+                target_q_values = replay_data.rewards + next_munchausen_values + (1 - replay_data.dones) * self.gamma * next_q_values
 
             # Get current Q-values estimates for each critic network
             # using action from the replay buffer
@@ -395,7 +253,6 @@ class MSAC(SAC):
         self.logger.record("munchausen/munchausen_fraction", np.average((abs(next_munchausen_values) / target_q_values)))
         self.logger.record("munchausen/replay_log_prob", replay_log_prob)
         self.logger.record("munchausen/next_q_values", np.average(next_q_values))
-        self.logger.record("munchausen/log_policy_normalized", log_prob_normalized)
 
         self.logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
         self.logger.record("train/ent_coef", np.mean(ent_coefs))
