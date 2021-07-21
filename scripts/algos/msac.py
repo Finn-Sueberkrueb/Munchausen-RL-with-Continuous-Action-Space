@@ -209,7 +209,7 @@ class MSAC(SAC):
                     self.munchausen_clipping_high = None
                 elif (self.munchausen_mode == "dynamicshift_clipping"):
                     # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
-                    next_munchausen_values = ent_coef * (replay_log_prob - th.mean(replay_log_prob))
+                    next_munchausen_values = ent_coef * (replay_log_prob - th.mean(replay_log_prob) + self.dynamicshift_hyperparameter)
                     self.logger.record("munchausen/replay_log_prob_shifted", next_munchausen_values/ent_coef)
                     replay_log_prob_shifted_mean = (th.mean(next_munchausen_values/ent_coef).data.numpy())
                     self.logger.record("munchausen/replay_log_prob_shifted_mean", np.average(replay_log_prob_shifted_mean))
@@ -218,7 +218,7 @@ class MSAC(SAC):
 
                 elif (self.munchausen_mode == "dynamicshift_no_clipping"):
                     # As described in the final report. Has shown very good results on the HalfCheetah seed 1.
-                    next_munchausen_values = ent_coef * (replay_log_prob - th.mean(replay_log_prob))
+                    next_munchausen_values = ent_coef * (replay_log_prob - th.mean(replay_log_prob) + self.dynamicshift_hyperparameter)
                     self.logger.record("munchausen/replay_log_prob_shifted", next_munchausen_values/ent_coef)
                     next_munchausen_values = self.munchausen_scaling * next_munchausen_values
 
@@ -268,16 +268,17 @@ class MSAC(SAC):
 
         # log the proportion that Munchausen has in the target q value
         entropy_scalamean = (th.mean(-ent_coef * next_log_prob.reshape(-1, 1)).data.numpy())
-        self.logger.record("munchausen/entropy_scalamean", np.average(entropy_scalamean))
+        #self.logger.record("munchausen/entropy_scalamean", np.average(entropy_scalamean))
         entropy_mean = (th.mean(-next_log_prob.reshape(-1, 1)).data.numpy())
         self.logger.record("munchausen/entropy_mean", np.average(entropy_mean))
         self.logger.record("munchausen/munchausen_clipping_low", self.munchausen_clipping_low)
         self.logger.record("munchausen/munchausen_clipping_high", self.munchausen_clipping_high)
-        self.logger.record("munchausen/munchausen_scaling", self.munchausen_scaling)
-        self.logger.record("munchausen/next_munchausen_values", np.average(next_munchausen_values))
+        #self.logger.record("munchausen/munchausen_scaling", self.munchausen_scaling)
+        #self.logger.record("munchausen/next_munchausen_values", np.average(next_munchausen_values))
+        self.logger.record("munchausen/dynamicshift_hyperparameter", self.dynamicshift_hyperparameter)
         self.logger.record("munchausen/munchausen_fraction", np.average((abs(next_munchausen_values) / target_q_values)))
         self.logger.record("munchausen/replay_log_prob", replay_log_prob)
-        self.logger.record("munchausen/next_q_values", np.average(next_q_values))
+        #self.logger.record("munchausen/next_q_values", np.average(next_q_values))
 
         self.logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
         self.logger.record("train/ent_coef", np.mean(ent_coefs))
