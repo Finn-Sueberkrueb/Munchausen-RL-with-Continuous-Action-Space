@@ -203,6 +203,42 @@ class MSAC(SAC):
 
 
                 if self.munchausen_state_based:
+
+                    # Action based Munchausen
+                    if (self.munchausen_mode == "no_clipping"):
+                        # Default M-SAC without clipping. Unstable!
+                        next_munchausen_values = ent_coef * replay_log_prob
+                        next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+                        self.munchausen_clipping_low = None
+                        self.munchausen_clipping_high = None
+
+                    elif (self.munchausen_mode == "dynamicshift_clipping"):
+                        # Action based Munchausen clipping and with dynamicshift
+                        next_munchausen_values = ent_coef * (
+                                    replay_log_prob - th.mean(replay_log_prob) + self.dynamicshift_hyperparameter)
+                        self.logger.record("munchausen/replay_log_prob_shifted", next_munchausen_values / ent_coef)
+                        next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
+                                                                                    self.munchausen_clipping_low,
+                                                                                    self.munchausen_clipping_high)
+
+                    elif (self.munchausen_mode == "dynamicshift"):
+                        # Action based Munchausen without clipping and with dynamicshift
+                        next_munchausen_values = ent_coef * (
+                                    replay_log_prob - th.mean(replay_log_prob) + self.dynamicshift_hyperparameter)
+                        self.logger.record("munchausen/replay_log_prob_shifted", next_munchausen_values / ent_coef)
+                        next_munchausen_values = self.munchausen_scaling * next_munchausen_values
+                        self.munchausen_clipping_low = None
+                        self.munchausen_clipping_high = None
+
+                    else:
+                        # Default M-SAC with clipping
+                        next_munchausen_values = ent_coef * replay_log_prob
+                        next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values,
+                                                                                    self.munchausen_clipping_low,
+                                                                                    self.munchausen_clipping_high)
+
+
+                else:
                     # State based Munchausen
                     if (self.munchausen_mode == "no_clipping"):
                         # State based Munchausen without clipping.
@@ -280,33 +316,6 @@ class MSAC(SAC):
                                                                                     self.munchausen_clipping_high)
 
 
-                else:
-                    # Action based Munchausen
-                    if (self.munchausen_mode == "no_clipping"):
-                        # Default M-SAC without clipping. Unstable!
-                        next_munchausen_values = ent_coef * replay_log_prob
-                        next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-                        self.munchausen_clipping_low = None
-                        self.munchausen_clipping_high = None
-
-                    elif (self.munchausen_mode == "dynamicshift_clipping"):
-                        # Action based Munchausen clipping and with dynamicshift
-                        next_munchausen_values = ent_coef * (replay_log_prob - th.mean(replay_log_prob) + self.dynamicshift_hyperparameter)
-                        self.logger.record("munchausen/replay_log_prob_shifted", next_munchausen_values/ent_coef)
-                        next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values, self.munchausen_clipping_low, self.munchausen_clipping_high)
-
-                    elif (self.munchausen_mode == "dynamicshift"):
-                        # Action based Munchausen without clipping and with dynamicshift
-                        next_munchausen_values = ent_coef * (replay_log_prob - th.mean(replay_log_prob) + self.dynamicshift_hyperparameter)
-                        self.logger.record("munchausen/replay_log_prob_shifted", next_munchausen_values/ent_coef)
-                        next_munchausen_values = self.munchausen_scaling * next_munchausen_values
-                        self.munchausen_clipping_low = None
-                        self.munchausen_clipping_high = None
-
-                    else:
-                        # Default M-SAC with clipping
-                        next_munchausen_values = ent_coef * replay_log_prob
-                        next_munchausen_values = self.munchausen_scaling * th.clamp(next_munchausen_values, self.munchausen_clipping_low, self.munchausen_clipping_high)
 
 
                 # td error + Munchausen term + entropy term
@@ -355,7 +364,11 @@ class MSAC(SAC):
         self.logger.record("munchausen/next_munchausen_values", np.average(next_munchausen_values))
         self.logger.record("munchausen/dynamicshift_hyperparameter", self.dynamicshift_hyperparameter)
         self.logger.record("munchausen/munchausen_fraction", np.average((abs(next_munchausen_values) / target_q_values)))
-        self.logger.record("munchausen/replay_log_prob", replay_log_prob)
+        if self.munchausen_state_based:
+            self.logger.record("munchausen/replay_log_prob", replay_log_prob)
+        else:
+            self.logger.record("munchausen/log_prob", log_prob)
+
         self.logger.record("munchausen/next_q_values", np.average(next_q_values))
 
         self.logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
