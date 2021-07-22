@@ -12,7 +12,8 @@
   - - gym_packages
     - []
   - - hyperparams
-    - munchausen_scaling: 0.1
+    - munchausen_clipping_high: 10.0
+      munchausen_clipping_low: -10.0
   - - log_folder
     - logs
   - - log_interval

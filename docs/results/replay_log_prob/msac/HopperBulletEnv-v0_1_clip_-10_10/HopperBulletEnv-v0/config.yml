@@ -16,13 +16,13 @@
   - - learning_starts
     - 10000
   - - munchausen_clipping_high
-    - 1
+    - 10.0
   - - munchausen_clipping_low
-    - -1
+    - -10.0
   - - munchausen_mode
     - default
   - - munchausen_scaling
-    - 0.1
+    - 0.9
   - - n_timesteps
     - 1000000.0
   - - policy
