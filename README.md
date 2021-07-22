@@ -1,6 +1,5 @@
-# ADLR 2021 - Project ID 08
-
-##Munchausen Reinforcement Learning with Continuous Action Space (M-SAC)
+# Munchausen Reinforcement Learning with Continuous Action Space (M-SAC)
+## ADLR 2021 - Project ID 08
 
 Authors:
 * [Marcel Brucker](mailto:marcel.brucker@tum.de)
@@ -32,8 +31,11 @@ Then the training can be started directly from the rl-baselines3-zoo submodule.
 ## Trained models
 All trained models can be found under docs/results.
 
-TODO: add some results
-![HalfCheetah M-SAC_s](./docs/images/Reward_Comparison_3-Seeds_HalfCheetahBulletEnv-v0.png "HalfCheetah M-SAC_s")
+![HalfCheetahBulletEnv-v0](./docs/images/Reward_Comparison_3-Seeds_HalfCheetahBulletEnv-v0.png)
+![Seeds_AntBulletEnv-v0](./docs/images/Reward_Comparison_3-Seeds_AntBulletEnv-v0.png)
+![Seeds_Walker2DBulletEnv-v0](./docs/images/Reward_Comparison_3-Seeds_Walker2DBulletEnv-v0.png)
+![Seeds_HopperBulletEnv-v0](./docs/images/Reward_Comparison_3-Seeds_HopperBulletEnv-v0.png)
+
 
 ## Important Links
 * Original Munchausen Reinforcement Learning 2020
