@@ -7,11 +7,11 @@ Authors:
 * [Finn Süberkrüb](mailto:finn.sueberkrueb@tum.de)
 
 Submitted documents:
-* [Proposal](./docs/submission/proposal-08.pdf)
-* [Milestone report](./docs/submission/milestone-report-08.pdf)
-* [Milestone presentation](./docs/submission/milestone-presentation-08.pdf)
-* [Final report](./docs/submission/final-report-08.pdf)
-* [Final presentation](./docs/submission/final-presentation-08.pdf)
+* [Proposal](./docs/submissions/proposal-08.pdf)
+* [Milestone report](./docs/submissions/milestone-report-08.pdf)
+* [Milestone presentation](./docs/submissions/milestone-presentation-08.pdf)
+* [Final report](./docs/submissions/final-report-08.pdf)
+* [Final presentation](./docs/submissions/final-presentation-08.pdf)
 
 ## Quick start
 The submodules must be checked out with the Branch Munchausen.
@@ -32,9 +32,10 @@ Then the training can be started directly from the rl-baselines3-zoo submodule.
 ## Trained models
 All trained models can be found under docs/results.
 
+TODO: add some results
+![HalfCheetah M-SAC_s](./docs/images/Reward_Comparison_3-Seeds_HalfCheetahBulletEnv-v0.png "HalfCheetah M-SAC_s")
 
 ## Important Links
-
 * Original Munchausen Reinforcement Learning 2020
   * https://arxiv.org/abs/2007.14430
   * https://github.com/google-research/google-research/tree/master/munchausen_rl
