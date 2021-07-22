@@ -7,9 +7,30 @@ Authors:
 * [Finn Süberkrüb](mailto:finn.sueberkrueb@tum.de)
 
 Submitted documents:
-* [Proposal](./documents%20submitted/proposal-08.pdf)
-* Milestone report (early June)
-* Final report (late July)
+* [Proposal](./docs/submission/proposal-08.pdf)
+* [Milestone report](./docs/submission/milestone-report-08.pdf)
+* [Milestone presentation](./docs/submission/milestone-presentation-08.pdf)
+* [Final report](./docs/submission/final-report-08.pdf)
+* [Final presentation](./docs/submission/final-presentation-08.pdf)
+
+## Quick start
+The submodules must be checked out with the Branch Munchausen.
+Then the training can be started directly from the rl-baselines3-zoo submodule.
+
+`python train.py --algo msac --env HalfCheetahBulletEnv-v0 --tensorboard-log logs/tensorboard --n-timesteps 1000000 --seed 1 --hyperparams munchausen_state_based:True munchausen_mode:"'dynamicshift'" dynamicshift_hyperparameter:-10.0`
+
+|hyperparameter |default| options|
+--- | --- | ---
+|munchausen_scaling|0.9| |
+|munchausen_clipping_low|-10.0| |
+|munchausen_clipping_high|10.0| |
+|munchausen_mode|"'dynamicshift'"|no_clipping, dynamicshift_minmax, dynamicshift_median, dynamicshift_target_entropy, dynamicshift_normalized, dynamicshift_clipping|
+|dynamicshift_hyperparameter|-10.0| |
+|munchausen_state_based|True|False|
+
+
+## Trained models
+All trained models can be found under docs/results.
 
 
 ## Important Links
