@@ -1,6 +1,5 @@
-# ADLR 2021 - Project ID 08
-
-##Munchausen Reinforcement Learning with Continuous Action Space (M-SAC)
+# Munchausen Reinforcement Learning with Continuous Action Space (M-SAC)
+## ADLR 2021 - Project ID 08
 
 Authors:
 * [Marcel Brucker](mailto:marcel.brucker@tum.de)
