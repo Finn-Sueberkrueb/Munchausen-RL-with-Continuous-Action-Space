@@ -29,7 +29,7 @@ Train in background process and redirect output to file\
 Visualize trained agent\
 `python enjoy.py --algo sac --env HopperBulletEnv-v0 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --n-timesteps 1000`
 
-with changed enjoy.py file to select the file directly
+with changed enjoy.py file to select the file directly\
 `python rl-baselines3-zoo/enjoy.py --algo msac --env HalfCheetahBulletEnv-v0 --folder docs/results/msac/HalfCheetahBulletEnv-v0_1_shift_30 `
 
 Plot training success (y-axis) w.r.t. timesteps (x-axis) with a moving window of 500 episodes\

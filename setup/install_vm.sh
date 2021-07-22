@@ -18,15 +18,13 @@ source ~/.bashrc
 # git repo
 mkdir ~/Repositories
 cd ~/Repositories
-git clone --branch dev/marcel --recursive git@github.com:Finn-Sueberkrueb/tum-adlr-ss21-08.git 
+git clone --recursive git@github.com:Finn-Sueberkrueb/tum-adlr-ss21-08.git 
 cd ~/Repositories/tum-adlr-ss21-08
 
 # create conda environment
-# conda env create -f ~/Repositories/tum-adlr-ss21-08/setup/requirements.yml
 conda config --append channels conda-forge
 conda create -n adlr python=3.7
 conda activate adlr
-# pip install stable-baselines3[extra]
 conda install seaborn
 conda install tensorboard
 pip install pyyaml
