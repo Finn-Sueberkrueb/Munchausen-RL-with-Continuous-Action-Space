@@ -36,10 +36,10 @@ Plot training success (y-axis) w.r.t. timesteps (x-axis) with a moving window of
 `python scripts/plot_train.py --algo sac msac --env HopperBulletEnv-v0 --y-axis reward --x-axis steps --exp-folder ~/Repositories/tum-adlr-ss21-08/docs/results/ --episode-window 500`
 
 Plot evaluation reward\
-`python scripts/all_plots.py -a sac msac --env AntBulletEnv-v0 --print-n-trials -max 1000000 -exp state_based action_based -f /Users/Marcel/Repositories/tum-adlr-ss21-08/docs/results -l ./results`
+`python scripts/all_plots.py -a sac msac --env HalfCheetahBulletEnv-v0 --print-n-trials -max 1000000 -exp state_based action_based -f /Users/Marcel/Repositories/tum-adlr-ss21-08/docs/results -l ./results`
 
 Plot any tensorboard scalar\
-`python scripts/plot_from_tensorboard.py -a sac msac --env AntBulletEnv-v0 --print-n-trials -max 1000000 -exp state_based action_based -f /Users/Marcel/Repositories/tum-adlr-ss21-08/docs/results -l ./results -t train/std`
+`python scripts/plot_from_tensorboard.py -a sac msac --env HalfCheetahBulletEnv-v0 --print-n-trials -max 1000000 -exp state_based action_based -f /Users/Marcel/Repositories/tum-adlr-ss21-08/docs/results -l ./results -t train/std`
 
 Record video\
 `python -m utils.record_video --algo sac --env AntBulletEnv-v0 -n 1000 --folder ~/Repositories/tum-adlr-ss21-08/docs/results --output-folder ~/Repositories/tum-adlr-ss21-08/docs/images/videos --exp-id 1`
